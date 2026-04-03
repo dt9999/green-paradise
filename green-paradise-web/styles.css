@@ -398,6 +398,11 @@ body {
   display: grid;
   justify-items: center;
   gap: 10px;
+  width: 100%;
+}
+
+.start-area .menu-button {
+  min-width: 220px;
 }
 
 .version-note {

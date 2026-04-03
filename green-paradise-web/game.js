@@ -1479,7 +1479,9 @@
       };
 
       element.addEventListener("click", run);
+      element.addEventListener("touchstart", run, { passive: false });
       element.addEventListener("touchend", run, { passive: false });
+      element.addEventListener("pointerdown", run);
       element.addEventListener("pointerup", run);
     };
 
