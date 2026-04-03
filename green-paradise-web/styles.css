@@ -393,6 +393,13 @@ body {
   border: 1px solid rgba(209, 151, 29, 0.25);
 }
 
+.version-note {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #366145;
+  opacity: 0.9;
+}
+
 .title-visual {
   position: relative;
   min-height: 340px;

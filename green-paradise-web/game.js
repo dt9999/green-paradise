@@ -1,4 +1,5 @@
 (function () {
+  const GAME_VERSION = "0.1.1";
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -40,6 +41,7 @@
     menuBackdrop: document.getElementById("menuBackdrop"),
     leafTouchButton: document.getElementById("leafTouchButton"),
     rotateHint: document.getElementById("rotateHint"),
+    gameVersion: document.getElementById("gameVersion"),
   };
 
   const input = {
@@ -1647,6 +1649,9 @@
   }
 
   renderMeta();
+  if (ui.gameVersion) {
+    ui.gameVersion.textContent = GAME_VERSION;
+  }
   setupEvents();
   setScreen("title");
   showMessage("スタートを押すと冒険が始まるよ。");
