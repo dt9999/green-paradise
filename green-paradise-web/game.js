@@ -1,5 +1,5 @@
 (function () {
-  const GAME_VERSION = "0.1.1";
+  const GAME_VERSION = "0.1.2";
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
 
