@@ -1,0 +1,7 @@
+{
+  "name": "green-paradise-web",
+  "private": true,
+  "scripts": {
+    "start": "node ./serve.mjs"
+  }
+}
