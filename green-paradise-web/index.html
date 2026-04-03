@@ -3,11 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#15321f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="グリーンパラダイス" />
     <title>グリーンパラダイス</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="game-shell">
+      <div id="rotateHint" class="rotate-hint">
+        <div class="rotate-card">
+          <div class="rotate-icon">↻</div>
+          <div class="rotate-title">スマホを横にしてね</div>
+          <div class="rotate-text">横画面のほうが遊びやすいように作ってあります。</div>
+        </div>
+      </div>
+
       <div class="top-bar">
         <button id="menuToggleButton" class="icon-button">メニュー</button>
         <div class="top-bar-stats">

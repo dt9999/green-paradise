@@ -39,6 +39,7 @@
     sideMenu: document.getElementById("sideMenu"),
     menuBackdrop: document.getElementById("menuBackdrop"),
     leafTouchButton: document.getElementById("leafTouchButton"),
+    rotateHint: document.getElementById("rotateHint"),
   };
 
   const input = {
@@ -477,6 +478,29 @@
 
   function syncLeafTouchButton(visible) {
     ui.leafTouchButton.classList.toggle("hidden-touch", !visible);
+  }
+
+  async function enterMobilePlayMode() {
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (error) {
+      return;
+    }
+
+    try {
+      if (screen.orientation && screen.orientation.lock) {
+        await screen.orientation.lock("landscape");
+      }
+    } catch (error) {
+      return;
+    }
+  }
+
+  function syncRotateHint() {
+    const portraitMobile = window.innerHeight > window.innerWidth && window.innerWidth <= 900;
+    ui.rotateHint.classList.toggle("show", portraitMobile);
   }
 
   function openMenu() {
@@ -1421,6 +1445,7 @@
   function setupEvents() {
     document.getElementById("startButton").addEventListener("click", () => {
       ensureAudio();
+      void enterMobilePlayMode();
       setScreen("stageSelect");
       closeMenu();
       showMessage("遊ぶステージをえらぼう。");
@@ -1541,6 +1566,10 @@
       button.addEventListener("pointercancel", release);
       button.addEventListener("pointerleave", release);
     });
+
+    window.addEventListener("resize", syncRotateHint);
+    window.addEventListener("orientationchange", syncRotateHint);
+    syncRotateHint();
   }
 
   function loop(lastTime) {
