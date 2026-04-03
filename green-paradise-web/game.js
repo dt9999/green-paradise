@@ -1443,6 +1443,16 @@
   }
 
   function setupEvents() {
+    const suppressUiGesture = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(".game-panel") || target.closest(".touch-controls") || target.closest("#gameCanvas")) {
+        event.preventDefault();
+      }
+    };
+
     document.getElementById("startButton").addEventListener("click", () => {
       ensureAudio();
       void enterMobilePlayMode();
@@ -1566,6 +1576,12 @@
       button.addEventListener("pointercancel", release);
       button.addEventListener("pointerleave", release);
     });
+
+    document.addEventListener("contextmenu", suppressUiGesture);
+    document.addEventListener("selectstart", suppressUiGesture);
+    document.addEventListener("dragstart", suppressUiGesture);
+    document.addEventListener("gesturestart", suppressUiGesture);
+    document.addEventListener("gesturechange", suppressUiGesture);
 
     window.addEventListener("resize", syncRotateHint);
     window.addEventListener("orientationchange", syncRotateHint);

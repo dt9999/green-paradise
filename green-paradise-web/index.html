@@ -177,13 +177,23 @@
 
         <div id="touchControls" class="touch-controls">
           <div class="touch-cluster touch-left">
-            <button data-control="left" class="touch-button move image-touch touch-left-btn" aria-label="左へ移動"></button>
-            <button data-control="right" class="touch-button move image-touch touch-right-btn" aria-label="右へ移動"></button>
+            <button data-control="left" class="touch-button move image-touch" aria-label="左へ移動">
+              <img class="touch-image" src="./assets/touch-left.svg" alt="" draggable="false" />
+            </button>
+            <button data-control="right" class="touch-button move image-touch" aria-label="右へ移動">
+              <img class="touch-image" src="./assets/touch-right.svg" alt="" draggable="false" />
+            </button>
           </div>
           <div class="touch-cluster touch-right">
-            <button data-control="leaf" id="leafTouchButton" class="touch-button leaf image-touch touch-leaf-btn hidden-touch" aria-label="葉っぱを発射"></button>
-            <button data-control="jump" class="touch-button jump image-touch touch-jump-btn" aria-label="ジャンプ"></button>
-            <button data-control="dive" class="touch-button dive image-touch touch-dive-btn" aria-label="急降下"></button>
+            <button data-control="leaf" id="leafTouchButton" class="touch-button leaf image-touch hidden-touch" aria-label="葉っぱを発射">
+              <img class="touch-image" src="./assets/touch-leaf.svg" alt="" draggable="false" />
+            </button>
+            <button data-control="jump" class="touch-button jump image-touch" aria-label="ジャンプ">
+              <img class="touch-image" src="./assets/touch-jump.svg" alt="" draggable="false" />
+            </button>
+            <button data-control="dive" class="touch-button dive image-touch" aria-label="急降下">
+              <img class="touch-image" src="./assets/touch-dive.svg" alt="" draggable="false" />
+            </button>
           </div>
         </div>
       </section>

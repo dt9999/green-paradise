@@ -969,48 +969,18 @@ body {
 }
 
 .image-touch {
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
   color: transparent;
-  text-indent: -9999px;
+  padding: 0;
   overflow: hidden;
 }
 
-.touch-button.move {
-  background: rgba(22, 48, 30, 0.82);
-}
-
-.touch-button.jump {
-  background: rgba(43, 133, 71, 0.84);
-}
-
-.touch-button.dive {
-  background: rgba(193, 74, 58, 0.84);
-}
-
-.touch-button.leaf {
-  background: rgba(103, 201, 118, 0.9);
-}
-
-.touch-left-btn {
-  background-image: url("./assets/touch-left.svg");
-}
-
-.touch-right-btn {
-  background-image: url("./assets/touch-right.svg");
-}
-
-.touch-jump-btn {
-  background-image: url("./assets/touch-jump.svg");
-}
-
-.touch-dive-btn {
-  background-image: url("./assets/touch-dive.svg");
-}
-
-.touch-leaf-btn {
-  background-image: url("./assets/touch-leaf.svg");
+.touch-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .hidden-touch {
