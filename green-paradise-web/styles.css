@@ -19,10 +19,12 @@ html,
 body,
 canvas,
 button,
+img,
 .game-shell,
 .game-panel,
 .touch-controls,
 .touch-button,
+.touch-image,
 .overlay,
 .panel {
   -webkit-user-select: none;
@@ -39,6 +41,7 @@ body {
     radial-gradient(circle at top, rgba(189, 244, 175, 0.22), transparent 30%),
     linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .rotate-hint {
@@ -236,6 +239,7 @@ body {
 .game-panel {
   position: relative;
   min-height: calc(100vh - 32px);
+  touch-action: none;
 }
 
 #gameCanvas {
@@ -932,6 +936,7 @@ body {
   justify-content: space-between;
   align-items: flex-end;
   pointer-events: none;
+  touch-action: none;
 }
 
 .touch-cluster {
@@ -964,8 +969,9 @@ body {
     opacity 180ms ease,
     transform 180ms ease,
     filter 180ms ease;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .image-touch {
@@ -981,6 +987,7 @@ body {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+  -webkit-touch-callout: none;
 }
 
 .hidden-touch {

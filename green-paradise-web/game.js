@@ -1453,6 +1453,18 @@
       }
     };
 
+    const attachTouchSuppressor = (element) => {
+      if (!element) {
+        return;
+      }
+      const preventTouchDefault = (event) => {
+        event.preventDefault();
+      };
+      element.addEventListener("touchstart", preventTouchDefault, { passive: false });
+      element.addEventListener("touchmove", preventTouchDefault, { passive: false });
+      element.addEventListener("touchend", preventTouchDefault, { passive: false });
+    };
+
     document.getElementById("startButton").addEventListener("click", () => {
       ensureAudio();
       void enterMobilePlayMode();
@@ -1545,7 +1557,12 @@
 
     document.querySelectorAll("[data-control]").forEach((button) => {
       const control = button.getAttribute("data-control");
-      const activate = () => {
+      attachTouchSuppressor(button);
+
+      const activate = (event) => {
+        if (event) {
+          event.preventDefault();
+        }
         ensureAudio();
         if (control === "left") {
           input.left = true;
@@ -1563,7 +1580,10 @@
           input.shootPressed = true;
         }
       };
-      const release = () => {
+      const release = (event) => {
+        if (event) {
+          event.preventDefault();
+        }
         if (control === "left") {
           input.left = false;
         }
@@ -1577,6 +1597,8 @@
       button.addEventListener("pointerleave", release);
     });
 
+    attachTouchSuppressor(document.querySelector(".game-panel"));
+    attachTouchSuppressor(document.getElementById("gameCanvas"));
     document.addEventListener("contextmenu", suppressUiGesture);
     document.addEventListener("selectstart", suppressUiGesture);
     document.addEventListener("dragstart", suppressUiGesture);
