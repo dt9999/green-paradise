@@ -15,6 +15,21 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+canvas,
+button,
+.game-shell,
+.game-panel,
+.touch-controls,
+.touch-button,
+.overlay,
+.panel {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -231,6 +246,7 @@ body {
   border: 3px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
   background: linear-gradient(180deg, #93d3f2, #eefbe3 68%);
+  touch-action: none;
 }
 
 .overlay {
@@ -948,6 +964,22 @@ body {
     opacity 180ms ease,
     transform 180ms ease,
     filter 180ms ease;
+  touch-action: manipulation;
+}
+
+.icon-touch {
+  font-size: 0;
+}
+
+.touch-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 2rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .touch-button.move {
@@ -964,7 +996,6 @@ body {
 
 .touch-button.leaf {
   background: rgba(103, 201, 118, 0.9);
-  font-size: 0.9rem;
 }
 
 .hidden-touch {

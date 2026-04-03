@@ -177,13 +177,23 @@
 
         <div id="touchControls" class="touch-controls">
           <div class="touch-cluster touch-left">
-            <button data-control="left" class="touch-button move">←</button>
-            <button data-control="right" class="touch-button move">→</button>
+            <button data-control="left" class="touch-button move icon-touch" aria-label="左へ移動">
+              <span class="touch-glyph">◀</span>
+            </button>
+            <button data-control="right" class="touch-button move icon-touch" aria-label="右へ移動">
+              <span class="touch-glyph">▶</span>
+            </button>
           </div>
           <div class="touch-cluster touch-right">
-            <button data-control="leaf" id="leafTouchButton" class="touch-button leaf hidden-touch">LEAF</button>
-            <button data-control="jump" class="touch-button jump">JUMP</button>
-            <button data-control="dive" class="touch-button dive">DIVE</button>
+            <button data-control="leaf" id="leafTouchButton" class="touch-button leaf icon-touch hidden-touch" aria-label="葉っぱを発射">
+              <span class="touch-glyph">✦</span>
+            </button>
+            <button data-control="jump" class="touch-button jump icon-touch" aria-label="ジャンプ">
+              <span class="touch-glyph">⬆</span>
+            </button>
+            <button data-control="dive" class="touch-button dive icon-touch" aria-label="急降下">
+              <span class="touch-glyph">⬇</span>
+            </button>
           </div>
         </div>
       </section>
