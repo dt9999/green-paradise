@@ -1448,7 +1448,12 @@
       if (!(target instanceof Element)) {
         return;
       }
-      if (target.closest(".game-panel") || target.closest(".touch-controls") || target.closest("#gameCanvas")) {
+      if (
+        target.closest(".touch-controls") ||
+        target.closest("#gameCanvas") ||
+        target.closest(".touch-button") ||
+        target.closest(".touch-image")
+      ) {
         event.preventDefault();
       }
     };
@@ -1597,7 +1602,7 @@
       button.addEventListener("pointerleave", release);
     });
 
-    attachTouchSuppressor(document.querySelector(".game-panel"));
+    attachTouchSuppressor(document.querySelector(".touch-controls"));
     attachTouchSuppressor(document.getElementById("gameCanvas"));
     document.addEventListener("contextmenu", suppressUiGesture);
     document.addEventListener("selectstart", suppressUiGesture);
