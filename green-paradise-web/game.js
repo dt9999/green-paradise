@@ -1443,6 +1443,8 @@
   }
 
   function setupEvents() {
+    let lastMenuPressAt = 0;
+
     const suppressUiGesture = (event) => {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1458,6 +1460,27 @@
       }
     };
 
+    const bindPress = (element, handler) => {
+      if (!element) {
+        return;
+      }
+
+      const run = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const now = Date.now();
+        if (now - lastMenuPressAt < 250) {
+          return;
+        }
+        lastMenuPressAt = now;
+        handler();
+      };
+
+      element.addEventListener("click", run);
+      element.addEventListener("touchend", run, { passive: false });
+      element.addEventListener("pointerup", run);
+    };
+
     const attachTouchSuppressor = (element) => {
       if (!element) {
         return;
@@ -1470,46 +1493,46 @@
       element.addEventListener("touchend", preventTouchDefault, { passive: false });
     };
 
-    document.getElementById("startButton").addEventListener("click", () => {
+    bindPress(document.getElementById("startButton"), () => {
       ensureAudio();
       void enterMobilePlayMode();
       setScreen("stageSelect");
       closeMenu();
       showMessage("遊ぶステージをえらぼう。");
     });
-    ui.menuToggleButton.addEventListener("click", () => {
+    bindPress(ui.menuToggleButton, () => {
       if (ui.sideMenu.classList.contains("open")) {
         closeMenu();
       } else {
         openMenu();
       }
     });
-    ui.menuCloseButton.addEventListener("click", closeMenu);
-    ui.menuBackdrop.addEventListener("click", closeMenu);
-    document.getElementById("openShopButton").addEventListener("click", () => {
+    bindPress(ui.menuCloseButton, closeMenu);
+    bindPress(ui.menuBackdrop, closeMenu);
+    bindPress(document.getElementById("openShopButton"), () => {
       setScreen("shop");
       showMessage("ポイントでパワーアップできるよ。");
     });
-    document.getElementById("closeShopButton").addEventListener("click", () => {
+    bindPress(document.getElementById("closeShopButton"), () => {
       setScreen("stageSelect");
       showMessage("どのステージにする？");
     });
-    document.getElementById("retryButton").addEventListener("click", () => startStage(worldState.currentStage || 1));
-    document.getElementById("gameOverToSelectButton").addEventListener("click", () => {
+    bindPress(document.getElementById("retryButton"), () => startStage(worldState.currentStage || 1));
+    bindPress(document.getElementById("gameOverToSelectButton"), () => {
       setScreen("stageSelect");
       showMessage("ステージをえらんで、また挑戦しよう。");
     });
-    document.getElementById("clearToSelectButton").addEventListener("click", () => {
+    bindPress(document.getElementById("clearToSelectButton"), () => {
       setScreen("stageSelect");
       showMessage("クリアおめでとう。ショップにも行けるよ。");
     });
-    document.getElementById("openEndingButton").addEventListener("click", () => showEnding(false));
-    document.getElementById("endingToSelectButton").addEventListener("click", () => {
+    bindPress(document.getElementById("openEndingButton"), () => showEnding(false));
+    bindPress(document.getElementById("endingToSelectButton"), () => {
       setScreen("stageSelect");
       showMessage("世界はみどりを取りもどした。");
     });
 
-    ui.tapButton.addEventListener("click", () => {
+    bindPress(ui.tapButton, () => {
       const now = Date.now();
       if (now < worldState.rewardTapReadyAt) {
         showMessage("応援ボタンは少し待つともう一回押せるよ。");
@@ -1519,7 +1542,7 @@
       grantPoints(5, "応援ポイント");
     });
 
-    ui.dailyButton.addEventListener("click", () => {
+    bindPress(ui.dailyButton, () => {
       if (!canClaimDaily()) {
         showMessage("デイリーボーナスは今日はもう受け取ったよ。");
         return;
@@ -1528,7 +1551,7 @@
       grantPoints(50, "デイリーボーナス");
     });
 
-    ui.adButton.addEventListener("click", () => {
+    bindPress(ui.adButton, () => {
       grantPoints(30, "広告ボーナス");
     });
 
