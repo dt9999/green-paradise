@@ -169,10 +169,10 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       // Use the same collision/attack path as gameplay for the final strike.
       await page.evaluate(() => {
         const e = testGame.enemies.find(e => e.boss); e.hp = 2; e.cycle = 2.5;
-        testGame.player.x = e.x + 20; testGame.player.y = e.y - 56;
-        testGame.player.grounded = false; testGame.player.vy = 300;
+        testGame.player.x = e.x + 20; testGame.player.y = e.y - 100;
+        testGame.player.grounded = false; testGame.player.vy = 0;
       });
-      await page.keyboard.press("s"); await page.waitForTimeout(100);
+      await page.keyboard.press("s"); await page.waitForFunction(() => !testGame.enemies.find(e => e.boss).alive, null, { timeout: 2000 });
       assert.ok(await page.evaluate(() => !testGame.enemies.find(e => e.boss).alive), `boss ${id} defeated by dive`);
       await page.evaluate(() => { testGame.player.x = testGame.stage.goalX; testGame.player.y = Paradise.FLOOR - 52; testGame.player.vy = 0; });
       await page.waitForTimeout(100);

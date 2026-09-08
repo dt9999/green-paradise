@@ -155,7 +155,7 @@
         sound.effect(e.type);
         if (e.type === "drop") toast("葉っぱアイテムが出た！ 拾うとこのステージで発射できるよ。");
         if (e.type === "pickup" && e.leaf) toast("葉っぱの力！ 3発分のゲージ、2秒で1発回復。Eで発射・1発1pt。");
-        if (e.type === "newEnemy") toast(e.text);
+        if (e.type === "newEnemy" || e.type === "gimmick") toast(e.text);
         if (e.type === "weakpoint") toast("弱点が開いた！ 2.4秒間、葉っぱで追撃できるよ！");
         if (e.type === "armored") toast("装甲には葉っぱが効きにくい！ 急降下で弱点を開こう。");
         if (e.type === "boss") toast(e.text);
@@ -256,6 +256,12 @@
   window.addEventListener("pagehide", writeSave); window.addEventListener("resize", resize);
   $("points").textContent = save.points; $("version").textContent = `バージョン ${P.VERSION}`;
   $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスの装甲には威力25%。急降下で2.4秒間、弱点が開きます。"));
+  const guide = document.createElement("details");
+  const heading = document.createElement("summary"); heading.textContent = "仕掛けのヒント（16種類）"; guide.append(heading);
+  for (const [name, hint] of Object.values(window.ParadiseGimmicks.INFO)) {
+    const line = document.createElement("p"); line.textContent = `${name}：${hint}`; guide.append(line);
+  }
+  $("menu").append(guide);
   resize(); show("title"); requestAnimationFrame(frame);
 
   function createSound() {
@@ -288,7 +294,7 @@
       resume() { paused = false; if (audio) void audio.resume().catch(() => {}); },
       toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; if (!muted) unlock(); return muted; },
       effect(type) {
-        const tones = { jump: 77, dive: 45, land: 43, grass: 89, hit: 62, defeat: 84, pickup: 88, purchase: 86, shoot: 82, hurt: 38, step: 40, bossAttack: 35, bossDefeat: 91, drop: 93 };
+        const tones = { jump: 77, spring: 89, crack: 42, dive: 45, land: 43, grass: 89, hit: 62, defeat: 84, pickup: 88, purchase: 86, shoot: 82, hurt: 38, step: 40, bossAttack: 35, bossDefeat: 91, drop: 93 };
         if (tones[type]) note(tones[type], type === "step" ? .035 : .16, type === "step" || type === "grass" ? .01 : .04, "triangle");
       } };
   }

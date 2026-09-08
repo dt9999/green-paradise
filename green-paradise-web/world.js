@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
-  const VERSION = "0.3.0";
+  const VERSION = "0.4.0";
+  const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
   const GRAVITY = 1500;
   const BIOMES = [
@@ -75,8 +76,9 @@
       for (let n = enemies.length - 1; n >= 0; n--) if (enemies[n].platform === platforms.length - 1) enemies.splice(n, 1);
       enemies.push({ type: "boss", x: last.x + 610, platform: platforms.length - 1 });
     }
-    return { id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals,
-      name: id === 1 ? "はじめの一歩" : boss ? boss.name : ["芽ぶきの道", "風の通り道", "ひみつの小径", "大樹への道"][local],
+    const gimmicks = G.build(platforms, region, local, id, crystals);
+    return { id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals, gimmicks,
+      name: id === 1 ? "はじめの一歩" : boss ? boss.name : `${G.INFO[G.REGIONS[region][local % G.REGIONS[region].length]][0]}${["の道", "の小径", "の冒険", "の試練"][local]}`,
       length: last.x + last.w, goalX: last.x + last.w - 120,
       bonus: 100 + id * 12 + (boss ? 180 : 0), cost: 90 + id * 12 };
   }
@@ -105,6 +107,7 @@
     const upgrades = { ...save.upgrades };
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
+      gimmicks: G.create(stage), seenGimmicks: new Set(),
       leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, seenEnemies: new Set(),
       player: { x: 80, y: FLOOR - 52, w: 36, h: 52, vx: 0, vy: 0, facing: 1, grounded: true, dive: false,
         hp: stats(upgrades).hp, maxHp: stats(upgrades).hp, invincible: 0, coyote: .1, jumpBuffer: 0 },
@@ -274,6 +277,8 @@
     if (g.state !== "playing") return;
     const p = g.player, stage = g.stage;
     g.time += dt; g.cooldown = Math.max(0, g.cooldown - dt); g.shake = Math.max(0, g.shake - dt);
+    const hooks = { emit, particles, damagePlayer };
+    G.update(g, dt, hooks);
     if (g.leaf) g.leafCharge = Math.min(3, g.leafCharge + dt / 2);
     p.invincible = Math.max(0, p.invincible - dt);
     p.coyote = p.grounded ? .1 : Math.max(0, p.coyote - dt);
@@ -285,12 +290,13 @@
     if (input.dive && !p.grounded) { p.dive = true; p.vy = 820; emit(g, "dive"); }
     if (input.shoot) shoot(g, points);
     const move = Number(!!input.right) - Number(!!input.left);
-    p.vx = move * stats(g.upgrades).speed;
+    const velocity = G.motion(g, move, stats(g.upgrades).speed, dt);
     if (move) p.facing = move;
-    const old = { x: p.x, y: p.y, bottom: p.y + p.h };
+    const old = { x: p.x, y: p.y, bottom: p.y + p.h, support: p.support };
     const wasGrounded = p.grounded;
-    p.x = clamp(p.x + p.vx * dt, 0, stage.length - p.w);
+    p.x = clamp(p.x + velocity * dt, 0, stage.length - p.w);
     p.vy = Math.min(1000, p.vy + GRAVITY * dt); p.y += p.vy * dt; p.grounded = false;
+    p.support = null;
     const boss = g.enemies.find(e => e.boss && e.alive);
     if (boss && p.x >= boss.lo - 20) {
       if (!g.arenaEntered) emit(g, "boss", { text: stage.boss.tip });
@@ -309,30 +315,33 @@
         hitEnemy(g, e, stats(g.upgrades).damage); p.y = e.y - p.h - 1; p.vy = -480; p.dive = false;
       } else if (overlap(p, e)) damagePlayer(g);
     }
-    for (const floor of stage.platforms) {
+    const surfaces = [...stage.platforms, ...G.surfaces(g)].sort((a, b) => a.y - b.y);
+    for (const floor of surfaces) {
       if (p.x + p.w <= floor.x || p.x >= floor.x + floor.w) continue;
-      if (p.vy >= 0 && old.bottom <= floor.y + 1 && p.y + p.h >= floor.y) {
+      if (p.vy >= 0 && old.bottom <= (old.support === floor.id ? floor.y : floor.oldY ?? floor.y) + 1 && p.y + p.h >= floor.y) {
         const dive = p.dive;
         p.y = floor.y - p.h; p.vy = 0; p.grounded = true; p.dive = false;
         if (!wasGrounded) { emit(g, "land"); if (dive) { grass(g, p.x + p.w / 2, 100, floor.y); particles(g, p.x, floor.y, "#cbf49b", 22); g.shake = .12; } }
         grass(g, p.x + p.w / 2, 14, floor.y);
-      } else if (overlap(p, floor) && old.bottom > floor.y + 1 && old.y < floor.y + floor.h) {
+        G.land(g, floor, dive, hooks);
+      } else if ((!floor.kind || floor.solid) && overlap(p, floor) && old.bottom > floor.y + 1 && old.y < floor.y + floor.h) {
         if (old.x + p.w <= floor.x + 1) p.x = floor.x - p.w;
         else if (old.x >= floor.x + floor.w - 1) p.x = floor.x + floor.w;
       }
     }
+    G.hazards(g, hooks);
     if (p.grounded && move && Math.floor(g.time * 5) !== Math.floor((g.time - dt) * 5)) emit(g, "step");
     g.shots = g.shots.filter(s => {
       const prevX = s.x; s.x += s.vx * dt; s.life -= dt;
       const sweep = { ...s, x: Math.min(prevX, s.x), w: s.w + Math.abs(s.x - prevX) };
-      if (stage.platforms.some(f => overlap(sweep, f))) return false;
+      if (surfaces.some(f => (!f.kind || f.solid) && f.active !== false && overlap(sweep, f))) return false;
       const e = g.enemies.find(e => e.alive && !e.intangible && overlap(sweep, e));
       if (e) { hitEnemy(g, e, stats(g.upgrades).damage / 2, undefined, "leaf"); return false; }
       return s.life > 0;
     });
     g.drops = g.drops.filter(d => {
       const bottom = d.y + d.h; d.vy += GRAVITY * dt; d.y += d.vy * dt;
-      for (const f of stage.platforms) if (d.x + d.w > f.x && d.x < f.x + f.w && bottom <= f.y + 1 && d.y + d.h >= f.y && d.vy > 0) { d.y = f.y - d.h; d.vy = 0; }
+      for (const f of surfaces) if (d.x + d.w > f.x && d.x < f.x + f.w && bottom <= f.y + 1 && d.y + d.h >= f.y && d.vy > 0) { d.y = f.y - d.h; d.vy = 0; }
       if (overlap(p, d)) { g.leaf = true; emit(g, "pickup", { leaf: true }); particles(g, d.x, d.y, "#fff0a0"); return false; }
       return d.y < 650;
     });
@@ -344,7 +353,7 @@
       if (h.delay > 0) { h.delay -= dt; return true; }
       h.life -= dt; h.x += h.vx * dt; h.y += h.vy * dt;
       if (overlap(p, h)) damagePlayer(g);
-      return h.life > 0 && h.y < 560;
+      return h.life > 0 && h.y < 560 && (h.kind !== "icicle" || h.y + h.h < h.floor);
     });
     g.particles = g.particles.filter(a => { a.x += a.vx * dt; a.y += a.vy * dt; a.vy += 130 * dt; a.life -= dt; return a.life > 0; });
     if (g.state !== "playing") return;

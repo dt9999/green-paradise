@@ -224,6 +224,91 @@
     if (e.warning) { c.fillStyle = "#fff2c2"; c.font = "bold 26px sans-serif"; c.fillText("!", w / 2 - 4, e.boss ? -28 : -43); }
     c.restore();
   }
+  function gimmick(c, a, time) {
+    c.save();
+    const { x, y, w, kind } = a;
+    const arrow = (ax, ay, angle = 0) => {
+      c.save(); c.translate(ax, ay); c.rotate(angle); c.strokeStyle = "#ffefb8"; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(-9, 0); c.lineTo(9, 0); c.lineTo(3, -6); c.moveTo(9, 0); c.lineTo(3, 6); c.stroke(); c.restore();
+    };
+    if (["moving", "lift", "phase", "crumble", "bridge"].includes(kind)) {
+      if (kind === "moving" || kind === "lift") {
+        c.strokeStyle = "#f1f4c860"; c.lineWidth = 2; c.setLineDash([3, 7]);
+        c.beginPath();
+        if (kind === "moving") { c.moveTo(a.baseX - a.range, y + 8); c.lineTo(a.baseX + w + a.range, y + 8); }
+        else { c.moveTo(x + w / 2, a.baseY + 12); c.lineTo(x + w / 2, a.baseY - a.range * 2); }
+        c.stroke(); c.setLineDash([]);
+      }
+      if (!a.active) {
+        c.strokeStyle = "#dbefc377"; c.setLineDash([5, 6]); c.strokeRect(x, y, w, 14); c.setLineDash([]);
+      } else {
+        const color = { moving: "#957850", lift: "#6bbec5", phase: "#c4d890", crumble: "#aa9580", bridge: "#80be6a" }[kind];
+        c.globalAlpha = a.warning && Math.floor(time * 12) % 2 ? .4 : 1;
+        round(c, x, y, w, 17, 7, color); round(c, x + 4, y + 2, w - 8, 4, 2, "#fff8d580");
+        if (kind === "crumble") {
+          c.strokeStyle = "#5f6252"; c.lineWidth = 2;
+          for (let i = 16; i < w; i += 30) { c.beginPath(); c.moveTo(x + i, y); c.lineTo(x + i - 6, y + 8); c.lineTo(x + i + 5, y + 16); c.stroke(); }
+        } else if (kind === "bridge") for (let i = 8; i < w; i += 16) leaf(c, x + i, y + 3, 13, "#c2e79a", -.5);
+        else if (kind === "phase") for (let i = 12; i < w; i += 22) ellipse(c, x + i, y - 5 + Math.sin(time * 3 + i) * 3, 3, 3, "#f1f7c4");
+        else arrow(x + w / 2, y + 10, kind === "lift" ? -Math.PI / 2 : 0);
+        c.globalAlpha = 1;
+      }
+    } else if (kind === "brittle" && a.active) {
+      round(c, x, y, w, a.h, 6, "#a3a98b"); round(c, x + 3, y + 2, w - 6, 8, 3, "#dadabb");
+      c.strokeStyle = "#627562"; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 38, y); c.lineTo(x + 26, y + 24); c.lineTo(x + 48, y + 38); c.lineTo(x + 30, y + a.h); c.stroke();
+      arrow(x + w / 2, y - 24, Math.PI / 2);
+    } else if (kind === "spring" || kind === "mushroom") {
+      const squash = a.cooldown > 0 ? 5 : 0;
+      round(c, x + 20, y - 23 + squash, 16, 25 - squash, 5, "#e1d5a7");
+      if (kind === "spring") {
+        c.strokeStyle = "#50734e"; c.lineWidth = 3; c.beginPath();
+        c.moveTo(x + 16, y - 2); c.lineTo(x + 40, y - 8); c.lineTo(x + 16, y - 14); c.lineTo(x + 40, y - 20); c.stroke();
+        leaf(c, x + 28, y - 24 + squash, 29, "#95cc7d");
+      } else {
+        ellipse(c, x + 28, y - 23 + squash, 34, 14, "#d68778");
+        for (const i of [-1, 0, 1]) ellipse(c, x + 28 + i * 17, y - 27 + squash, 5, 3, "#fff0c6");
+      }
+      arrow(x + 28, y - 49, -Math.PI / 2);
+    } else if (["ice", "sand", "conveyor"].includes(kind)) {
+      round(c, x, y - 3, w, 17, 4, kind === "ice" ? "#b8ebef" : kind === "sand" ? "#e6bf7a" : "#526c69");
+      c.save(); c.beginPath(); c.rect(x + 3, y - 3, w - 6, 20); c.clip();
+      for (let i = -1; i < w / 28 + 1; i++) {
+        const dx = x + i * 28 + (time * (kind === "conveyor" ? a.force : 12) % 28);
+        if (kind === "conveyor") arrow(dx, y + 6, a.force < 0 ? Math.PI : 0);
+        else { c.strokeStyle = kind === "ice" ? "#ffffffaa" : "#b8915966"; c.beginPath(); c.moveTo(dx, y + 1); c.lineTo(dx + 12, y + 10); c.stroke(); }
+      }
+      c.restore();
+    } else if (kind === "wind" || kind === "updraft") {
+      const gradient = c.createLinearGradient(x, y, x, y + a.h);
+      gradient.addColorStop(0, "#fff5c005"); gradient.addColorStop(1, "#c7ebba50");
+      c.fillStyle = gradient; c.fillRect(x, y, w, a.h);
+      for (let i = 0; i < 8; i++) {
+        const ax = x + 15 + (i * 29 + (kind === "wind" ? time * 65 : 0)) % (w - 30);
+        const ay = y + 18 + ((i * 41 - time * 65) % (a.h - 36) + a.h - 36) % (a.h - 36);
+        c.globalAlpha = .65; arrow(ax, ay, kind === "updraft" ? -Math.PI / 2 : 0);
+      }
+      c.globalAlpha = 1;
+    } else if (kind === "switch") {
+      round(c, x - 4, y - 5, w + 8, 11, 4, "#60796a");
+      round(c, x + 3, y - (a.activated ? 10 : 20), w - 6, a.activated ? 8 : 18, 6, a.activated ? "#b6e78b" : "#ecc987");
+      leaf(c, x + w / 2, y - (a.activated ? 8 : 17), 10, "#4f855c");
+      if (!a.activated) arrow(x + w / 2, y - 47, Math.PI / 2);
+    } else if (kind === "steam") {
+      round(c, x, y - 8, w, 16, 4, "#637570");
+      for (let i = 8; i < w; i += 12) round(c, x + i, y - 7, 5, 10, 2, "#263e3b");
+      if (a.blasting) for (let i = 0; i < 8; i++) {
+        const rise = (time * 100 + i * 13) % 88;
+        ellipse(c, x + w / 2 + Math.sin(i + time * 5) * 10, y - rise, 9 + rise * .12, 12, "#fff3d8aa");
+      }
+    } else if (kind === "icicle" && a.cooldown === 0) {
+      c.fillStyle = "#cbf4f3"; c.beginPath(); c.moveTo(x + 15, y - 220); c.lineTo(x + 41, y - 220); c.lineTo(x + 28 + (a.warning ? Math.sin(time * 30) * 2 : 0), y - 184); c.fill();
+    }
+    if (a.warning && ["steam", "icicle"].includes(kind)) {
+      round(c, x - 6, y - 4, w + 12, 6, 3, Math.floor(time * 10) % 2 ? "#ffce84" : "#dc7255");
+      c.fillStyle = "#fff0b2"; c.font = "bold 23px sans-serif"; c.fillText("!", x + w / 2 - 4, y - 32);
+    }
+    c.restore();
+  }
   function render(c, g, time, width, ending = false) {
     const b = g ? g.stage.biome : P.BIOMES[0], camera = g ? g.camera : time * 6;
     scenery(c, b, width, time, camera);
@@ -263,6 +348,7 @@
       leaf(c, x + 6, y - 8, 9, "#b2d983", -1 + sway); leaf(c, x + 14, y - 6, 8, "#80c777", 1 + sway);
       if (x % 80 === 0) { ellipse(c, x + 10, y - 15, 4, 4, "#fae0ac"); ellipse(c, x + 10, y - 15, 1.8, 1.8, "#c39a53"); }
     }
+    for (const a of g.gimmicks) if (a.x + a.w > camera - 80 && a.x < camera + width + 80) gimmick(c, a, time);
     tree(c, g.stage.goalX + 30, P.FLOOR, .9, "#76b16b", time);
     for (const gem of g.crystals) {
       c.fillStyle = "#ffdc8e"; c.beginPath(); c.moveTo(gem.x + 8, gem.y - 2); c.lineTo(gem.x + 16, gem.y + 9); c.lineTo(gem.x + 8, gem.y + 20); c.lineTo(gem.x, gem.y + 9); c.fill();
@@ -270,7 +356,8 @@
     for (const e of g.enemies) if (e.alive && e.x > camera - 120 && e.x < camera + width + 120) enemy(c, e, time, b);
     for (const h of g.hazards) {
       if (h.delay > 0) { round(c, h.x - 8, P.FLOOR - 4, h.w + 16, 6, 3, Math.floor(time * 8) % 2 ? "#f9c065" : "#e47759"); continue; }
-      if (h.kind === "storm") round(c, h.x, h.y, h.w, h.h, 5, "#fff4a8");
+      if (h.kind === "icicle") { c.fillStyle = "#d0f8f3"; c.beginPath(); c.moveTo(h.x, h.y); c.lineTo(h.x + h.w, h.y); c.lineTo(h.x + h.w / 2, h.y + h.h); c.fill(); }
+      else if (h.kind === "storm") round(c, h.x, h.y, h.w, h.h, 5, "#fff4a8");
       else if (h.kind === "poison") ellipse(c, h.x + h.w / 2, h.y + 5, h.w / 2, 10, "#b0c950bb");
       else { ellipse(c, h.x + h.w / 2, h.y + h.h / 2, h.w / 2 + 5, h.h / 2 + 5, "#f4d18b44"); ellipse(c, h.x + h.w / 2, h.y + h.h / 2, h.w / 2, h.h / 2, "#e5aa68"); }
     }

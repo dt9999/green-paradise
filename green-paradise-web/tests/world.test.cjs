@@ -17,9 +17,9 @@ test("50 deterministic stages, 10 biomes, 10 different bosses", () => {
 });
 
 for (const speed of [0, 4, 7]) for (const jump of [0, 4, 7]) {
-  test(`All gaps are jumpable in both directions: speed ${speed}, jump ${jump}`, () => {
+  test(`Base ground gaps are jumpable in both directions: speed ${speed}, jump ${jump}`, () => {
     for (const stage of P.STAGES) for (let i = 0; i < stage.platforms.length - 1; i++) for (const direction of [1, -1]) {
-      const g = fresh(stage.id, { speed, jump }); g.enemies = [];
+      const g = fresh(stage.id, { speed, jump }); g.enemies = []; g.gimmicks = [];
       const a = stage.platforms[direction === 1 ? i : i + 1], b = stage.platforms[direction === 1 ? i + 1 : i];
       g.player.x = direction === 1 ? a.x + a.w - 40 : a.x + 4; g.player.y = a.y - g.player.h;
       let landed = false;
@@ -33,9 +33,9 @@ for (const speed of [0, 4, 7]) for (const jump of [0, 4, 7]) {
   });
 }
 
-test("Full traversal and tree clears on all 50 layouts", () => {
+test("Base ground traversal and tree clears on all 50 layouts (gimmicks tested separately)", () => {
   for (const stage of P.STAGES) {
-    const g = fresh(stage.id); g.enemies = [];
+    const g = fresh(stage.id); g.enemies = []; g.gimmicks = [];
     for (let n = 0; n < 3600 && g.state === "playing"; n++) {
       const p = g.player, f = stage.platforms.find(f => p.x + p.w > f.x && p.x < f.x + f.w && Math.abs(p.y + p.h - f.y) < 1);
       P.step(g, { right: true, jump: p.grounded && f && p.x >= f.x + f.w - 42 }, 1 / 60);
