@@ -165,7 +165,10 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       });
       await page.waitForTimeout(180);
       assert.equal(await page.locator("#bossHud").isVisible(), true);
+      assert.equal(await page.locator("#bossIntro").isVisible(), true);
+      assert.ok(await page.evaluate(() => testScore.drums && testScore === ParadiseMusic.BOSS_TRACKS[testGame.stage.region]));
       await snapshot(page, `boss-${id}`);
+      await page.waitForFunction(() => testGame.bossIntro === 0);
       // Use the same collision/attack path as gameplay for the final strike.
       await page.evaluate(() => {
         const e = testGame.enemies.find(e => e.boss); e.hp = 2; e.cycle = 2.5;

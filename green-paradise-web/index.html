@@ -10,7 +10,7 @@
   <title>グリーンパラダイス | 50の冒険</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=0.4.0">
+  <link rel="stylesheet" href="./styles.css?v=0.5.0">
 </head>
 <body data-screen="title">
   <canvas id="gameCanvas" aria-label="グリーンの冒険の風景"></canvas>
@@ -26,7 +26,7 @@
         <h1>グリーン<br><span>パラダイス</span></h1>
         <p class="lead">その小さな一歩が、<br>世界をみどりに変えていく。</p>
         <div class="title-facts"><span>10 の世界</span><span>50 の冒険</span><span>10 体のボス</span></div>
-        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 0.4.0</small></div>
+        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 0.5.0</small></div>
         <p class="title-hint">A・D 移動 ／ W ジャンプ ／ S 急降下<br>スマホは画面のボタンで遊べます</p>
       </div>
       <div class="scene-caption"><span>01 / THE FIRST SPROUT</span><strong>はじまりの森</strong><small>グリーンと、もう一度芽ぶく世界へ。</small></div>
@@ -47,6 +47,9 @@
   <div id="playHud" class="play-hud" hidden><span id="stageLabel"></span><span id="hearts"></span><span id="leafStatus"></span></div>
   <div id="bossHud" class="boss-hud" hidden><div><b id="bossName"></b><span id="bossTip"></span></div><progress id="bossHealth" max="1" value="1"></progress></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <button id="hintButton" class="small-button hint-button" hidden>？ ヒント</button>
+  <div id="tutorialHint" class="tutorial-hint" hidden></div>
+  <div id="bossIntro" class="boss-intro" hidden><small>GUARDIAN OF THE WASTELAND</small><strong id="bossIntroName"></strong><span>大樹を守る戦いが、はじまる。</span></div>
   <div id="rotateHint" class="rotate-hint" hidden>スマホを横にすると、広く遊べるよ。</div>
   <div id="touchControls" class="touch-controls" hidden>
     <div class="touch-left"><button data-control="left" aria-label="左へ移動"><img src="./assets/touch-left.svg" draggable="false" alt=""></button><button data-control="right" aria-label="右へ移動"><img src="./assets/touch-right.svg" draggable="false" alt=""></button></div>
@@ -54,6 +57,6 @@
   </div>
   <dialog id="menu"><div class="menu-head"><h2>ひとやすみ</h2><button id="closeMenu" class="small-button" aria-label="メニューを閉じる">×</button></div><p>メニューを開いている間は、ゲームが止まるよ。</p><button id="resumeButton" class="primary">つづける</button><button id="mapFromMenu" class="small-button">地図へ戻る</button><button id="soundButton" class="small-button">音：オン</button><button id="fullscreenButton" class="small-button">全画面にする</button><hr><button id="dailyButton" class="small-button">今日のボーナス +50pt</button><button id="supportButton" class="small-button">応援ボタン +5pt</button><button id="adButton" class="small-button">広告を見る（おためし）+30pt</button><small>おためし版です。本物の広告は流れません。</small><p class="instructions">A / D：左右　W / ↑ / Space：ジャンプ<br>S / ↓：急降下　E：葉っぱ（アイテム取得後）<br>葉っぱは急降下の半分の強さ。1発1pt。</p></dialog>
   <noscript>ゲームを遊ぶには、ブラウザの JavaScript を有効にしてください。</noscript>
-  <script src="./gimmicks.js?v=0.4.0"></script><script src="./world.js?v=0.4.0"></script><script src="./music.js?v=0.4.0"></script><script src="./art.js?v=0.4.0"></script><script src="./game.js?v=0.4.0"></script>
+  <script src="./gimmicks.js?v=0.5.0"></script><script src="./world.js?v=0.5.0"></script><script src="./music.js?v=0.5.0"></script><script src="./art.js?v=0.5.0"></script><script src="./game.js?v=0.5.0"></script>
 </body>
 </html>

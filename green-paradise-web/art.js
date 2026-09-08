@@ -99,8 +99,18 @@
   }
   function enemy(c, e, time, b) {
     c.save(); c.translate(e.x, e.y);
-    if (e.hit > 0) c.globalAlpha = .6;
+    if (e.hit > 0 || (e.boss && e.recovery > 0)) c.globalAlpha = .6;
     const color = e.boss ? b.near : "#46575a", w = e.w, h = e.h;
+    if (e.boss) {
+      const aura = e.phase === 2 ? "#f1a45a" : b.accent;
+      ellipse(c, w / 2, h / 2, 77 + Math.sin(time * 3) * 4, 65, `${aura}22`);
+      c.strokeStyle = aura; c.lineWidth = e.phase === 2 ? 3 : 1.5;
+      c.beginPath(); c.ellipse(w / 2, h / 2, 68, 60, 0, 0, Math.PI * 2); c.stroke();
+      for (let i = 0; i < (e.phase === 2 ? 10 : 5); i++) {
+        const angle = time * (e.phase === 2 ? 1.8 : .5) + i * Math.PI * 2 / (e.phase === 2 ? 10 : 5);
+        leaf(c, w / 2 + Math.cos(angle) * 70, h / 2 + Math.sin(angle) * 62, 5, aura, angle);
+      }
+    }
     if (e.intangible) {
       if (e.type === "burrower") ellipse(c, w / 2, h - 1, w * .65, 9, "#b59164");
       else {
@@ -349,6 +359,19 @@
       if (x % 80 === 0) { ellipse(c, x + 10, y - 15, 4, 4, "#fae0ac"); ellipse(c, x + 10, y - 15, 1.8, 1.8, "#c39a53"); }
     }
     for (const a of g.gimmicks) if (a.x + a.w > camera - 80 && a.x < camera + width + 80) gimmick(c, a, time);
+    if (g.stage.boss) {
+      const arena = g.stage.platforms.at(-1);
+      for (const x of [arena.x + 12, arena.x + arena.w - 35]) {
+        round(c, x, P.FLOOR - 180, 22, 180, 3, b.near);
+        round(c, x - 7, P.FLOOR - 188, 36, 15, 3, b.edge);
+        c.fillStyle = b.accent; c.beginPath(); c.moveTo(x + 22, P.FLOOR - 167); c.lineTo(x + 70, P.FLOOR - 153); c.lineTo(x + 22, P.FLOOR - 132); c.fill();
+      }
+      if (g.enemies.some(e => e.boss && e.alive)) {
+        const x = g.stage.goalX - 90;
+        c.strokeStyle = `${b.accent}aa`; c.lineWidth = 3;
+        for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(x + Math.sin(time * 3 + i) * 7, P.FLOOR - i * 35); c.lineTo(x + Math.sin(time * 3 + i + 1) * 7, P.FLOOR - (i + 1) * 35); c.stroke(); }
+      }
+    }
     tree(c, g.stage.goalX + 30, P.FLOOR, .9, "#76b16b", time);
     for (const gem of g.crystals) {
       c.fillStyle = "#ffdc8e"; c.beginPath(); c.moveTo(gem.x + 8, gem.y - 2); c.lineTo(gem.x + 16, gem.y + 9); c.lineTo(gem.x + 8, gem.y + 20); c.lineTo(gem.x, gem.y + 9); c.fill();

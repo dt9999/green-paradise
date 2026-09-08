@@ -13,6 +13,7 @@
   const keys = new Set(), pointers = new Map(), actions = { jump: false, dive: false, shoot: false };
   const sound = createSound();
   const screens = ["title", "map", "shop", "result", "ending"];
+  const hintHistory = [];
 
   function writeSave() {
     try { localStorage.setItem(STORAGE, JSON.stringify(save)); writePending = false; }
@@ -20,6 +21,11 @@
   }
   function points(amount) { save.points = Math.max(0, save.points + amount); $("points").textContent = save.points; writePending = true; }
   function toast(text) {
+    if (currentScreen === "play") {
+      if (!hintHistory.includes(text)) hintHistory.unshift(text);
+      hintHistory.length = Math.min(hintHistory.length, 30);
+      if (!$("menu").open) return;
+    }
     $("toast").textContent = text; $("toast").hidden = false; toastTime = 4;
     if ($("menu").open) {
       let status = $("menuStatus");
@@ -33,6 +39,7 @@
   }
   function show(screen) {
     currentScreen = screen; document.body.dataset.screen = screen;
+    $("toast").hidden = true;
     if (screen === "ending") endingTime = 0;
     for (const id of screens) $(id).hidden = id !== screen;
     clearInput(); syncHud();
@@ -44,20 +51,25 @@
     const playing = currentScreen === "play" && game?.state === "playing";
     $("playHud").hidden = !playing;
     $("touchControls").hidden = !playing || $("menu").open;
+    $("hintButton").hidden = !playing;
+    $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || $("menu").open;
+    $("bossIntro").hidden = !playing || !(game?.bossIntro > 0) || $("menu").open;
+    if (playing && game.bossIntro > 0) $("bossIntroName").textContent = game.stage.boss.name;
     $("leafButton").hidden = !playing || !game.leaf;
-    $("rotateHint").hidden = !(playing && innerHeight > innerWidth && matchMedia("(pointer: coarse)").matches);
+    $("rotateHint").hidden = true;
     $("bossHud").hidden = true;
     if (!playing) return;
     $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${game.stage.biome.name}`;
     $("hearts").textContent = "♥".repeat(Math.max(0, game.player.hp)) + "♡".repeat(game.player.maxHp - Math.max(0, game.player.hp));
     const charges = Math.floor(game.leafCharge + 1e-9);
-    $("leafStatus").textContent = game.leaf ? `葉っぱ ${"●".repeat(charges)}${"○".repeat(3 - charges)} · 2秒で1発回復 · 1pt` : "葉っぱアイテムで特別技が使えるよ";
+    $("leafStatus").textContent = game.leaf ? `葉っぱ ${"●".repeat(charges)}${"○".repeat(3 - charges)} · 1pt` : "";
     $("leafButton").disabled = save.points < 1 || charges < 1;
     const boss = game.enemies.find(e => e.boss && e.alive);
     if (boss && game.arenaEntered) {
       $("bossHud").hidden = false;
       $("bossName").textContent = game.stage.boss.name;
-      $("bossTip").textContent = boss.shield ? "バリア中！ 消えたら攻撃" : boss.openTime > 0 ? `弱点オープン ${boss.openTime.toFixed(1)}秒！ 葉っぱで追撃！` : boss.warning ? "攻撃がくるよ！" : "葉っぱに強い装甲！ 急降下で弱点を開こう";
+      $("bossTip").textContent = `${boss.phase === 2 ? "本気モード" : "第1形態"} · ${boss.shield ? "バリア" : boss.recovery > 0 ? "ガード中" : boss.openTime > 0 ? "弱点オープン" : boss.warning ? "攻撃の合図！" : "急降下で攻撃"}`;
+      $("bossHud").dataset.phase = boss.phase;
       $("bossHealth").max = boss.maxHp; $("bossHealth").value = Math.max(0, boss.hp);
     }
   }
@@ -158,8 +170,9 @@
         if (e.type === "newEnemy" || e.type === "gimmick") toast(e.text);
         if (e.type === "weakpoint") toast("弱点が開いた！ 2.4秒間、葉っぱで追撃できるよ！");
         if (e.type === "armored") toast("装甲には葉っぱが効きにくい！ 急降下で弱点を開こう。");
-        if (e.type === "boss") toast(e.text);
-        if (e.type === "bossDefeat") toast("ボスをたおした！ 大きな木へ進もう。");
+        if (e.type === "boss") { toast(e.text); sound.theme("boss", game.stage.region); }
+        if (e.type === "bossPhase") sound.theme("boss", game.stage.region, 2);
+        if (e.type === "bossDefeat") { toast("ボスをたおした！ 大きな木へ進もう。"); sound.theme("clear"); }
         if (e.type === "blocked") toast("バリアが消えるのを待って攻撃しよう！");
       }
     }
@@ -190,7 +203,8 @@
       syncHud();
       if (game.stage.id === 1) {
         const index = game.player.x < 330 ? 0 : game.player.x < 700 ? 1 : game.player.x < 1150 ? 2 : 3;
-        if (index > tutorialStep) { tutorialStep = index; toast(["左右ボタン / A・D で歩こう。足もとに草が生えるよ。", "穴の手前でジャンプ！ 上向きボタン / W を押そう。", "空中で下向きボタン / S を押すと急降下！", "敵は急降下で上からたおそう。普通にぶつかるとダメージ。"][index]); }
+        if (index > tutorialStep) { tutorialStep = index; $("tutorialHint").textContent = ["左右ボタン / A・D で移動", "上ボタン / W でジャンプ", "空中で下ボタン / S → 急降下", "敵の上から急降下！"][index]; }
+        if (game.player.x > 1700) $("tutorialHint").hidden = true;
       }
     }
     if (writePending && ms - lastSave > 1200) { writeSave(); lastSave = ms; }
@@ -218,6 +232,12 @@
   document.querySelectorAll("[data-map]").forEach(b => b.addEventListener("click", goMap));
   $("retryButton").addEventListener("click", () => startStage(game.stage.id));
   $("menuButton").addEventListener("click", openMenu);
+  $("hintButton").addEventListener("click", () => {
+    openMenu();
+    const log = $("recentHints"); log.replaceChildren();
+    for (const text of hintHistory) { const p = document.createElement("p"); p.textContent = text; log.append(p); }
+    $("hintGuide").open = true; $("hintGuide").scrollIntoView({ block: "start" });
+  });
   $("closeMenu").addEventListener("click", closeMenu); $("resumeButton").addEventListener("click", closeMenu);
   $("menu").addEventListener("cancel", e => { e.preventDefault(); closeMenu(); });
   $("mapFromMenu").addEventListener("click", () => { closeMenu(); goMap(); });
@@ -256,8 +276,12 @@
   window.addEventListener("pagehide", writeSave); window.addEventListener("resize", resize);
   $("points").textContent = save.points; $("version").textContent = `バージョン ${P.VERSION}`;
   $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスの装甲には威力25%。急降下で2.4秒間、弱点が開きます。"));
-  const guide = document.createElement("details");
+  $("menu").querySelector(".instructions").append(document.createTextNode(" ボスは1回の急降下で最大3.5、葉っぱで最大1.75ダメージ。命中直後は短い無敵時間があります。体力が半分になると本気モード！"));
+  const guide = document.createElement("details"); guide.id = "hintGuide";
   const heading = document.createElement("summary"); heading.textContent = "仕掛けのヒント（16種類）"; guide.append(heading);
+  const backToPlay = document.createElement("button"); backToPlay.className = "small-button"; backToPlay.textContent = "閉じてつづける";
+  backToPlay.addEventListener("click", closeMenu); guide.append(backToPlay);
+  const recent = document.createElement("div"); recent.id = "recentHints"; guide.append(recent);
   for (const [name, hint] of Object.values(window.ParadiseGimmicks.INFO)) {
     const line = document.createElement("p"); line.textContent = `${name}：${hint}`; guide.append(line);
   }
@@ -278,6 +302,7 @@
         note(score.notes[beat % score.notes.length], score.stepMs / 1000 * 1.2, score.wave === "square" || score.wave === "sawtooth" ? .009 : .024, score.wave);
         const meter = score.meter || 4;
         if (beat % meter === 0) note(score.bass[Math.floor(beat / meter) % score.bass.length], score.stepMs / 1000 * meter, .018);
+        if (score.drums) { note(beat % 4 === 0 ? 30 : 42, .065, .035, "triangle"); if (beat % 2) note(96, .025, .008, "square"); }
         beat++;
       }
       timer = setTimeout(tick, score.stepMs);
@@ -289,7 +314,7 @@
       } catch { /* Audio support must never block menu navigation. */ }
     }
     return { unlock,
-      theme(next, region = 0) { score = window.ParadiseMusic.select(next, region); beat = 0; if (timer) clearTimeout(timer); timer = null; if (audio) tick(); },
+      theme(next, region = 0, phase = 1) { score = window.ParadiseMusic.select(next, region, phase); beat = 0; if (timer) clearTimeout(timer); timer = null; if (audio) tick(); },
       pause() { paused = true; if (audio) void audio.suspend().catch(() => {}); },
       resume() { paused = false; if (audio) void audio.resume().catch(() => {}); },
       toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; if (!muted) unlock(); return muted; },

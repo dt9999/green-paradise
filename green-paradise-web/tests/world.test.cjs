@@ -92,8 +92,8 @@ test("Leaves require unlock and 1pt, have cooldown, deal half dive damage to exp
     g.player.x = e.x - 50; g.player.y = e.y; g.player.facing = 1; g.player.grounded = false;
     assert.equal(P.shoot(g, 10), false); g.leaf = true;
     assert.equal(P.shoot(g, 0), false); assert.equal(P.shoot(g, 10), true); assert.equal(P.shoot(g, 10), false);
-    tick(g, 10);
-    assert.equal(e.hp, e.maxHp - P.stats(g.upgrades).damage / 2);
+    g.arenaEntered = true; tick(g, 10);
+    assert.equal(e.hp, e.maxHp - Math.min(1.75, P.stats(g.upgrades).damage / 2));
     assert.equal(g.events.filter(e => e.type === "points" && e.amount === -1).length, 1);
   }
 });
@@ -103,8 +103,8 @@ test("All bosses need multiple hits, shields block, and defeat clears attacks", 
     const g = fresh(stage.id), e = g.enemies.find(e => e.boss);
     e.shield = true; assert.equal(P.hitEnemy(g, e, 2), false); assert.equal(e.hp, e.maxHp);
     e.shield = false; P.hitEnemy(g, e, 2); assert.equal(e.alive, true);
-    g.hazards.push({ kind: "wave" });
-    for (let n = 0; n < 20 && e.alive; n++) P.hitEnemy(g, e, 2);
+    g.hazards.push({ kind: "wave", x: -999, y: 400, w: 10, h: 10, vx: 0, vy: 0, life: 100, delay: 0 });
+    for (let n = 0; n < 40 && e.alive; n++) { tick(g, 46); P.hitEnemy(g, e, 2); }
     assert.equal(e.alive, false); assert.equal(g.hazards.length, 0);
     assert.ok(g.grass.size >= 18); assert.equal(g.events.filter(e => e.type === "bossDefeat").length, 1);
   }
@@ -134,7 +134,7 @@ test("Every boss runs its special attack and telegraphs it", () => {
 test("Boss blocks the goal, then permits stage clear", () => {
   const g = fresh(50), boss = g.enemies.find(e => e.boss);
   g.player.x = g.stage.goalX; tick(g); assert.equal(g.state, "playing");
-  P.hitEnemy(g, boss, 100); g.player.x = g.stage.goalX; tick(g);
+  tick(g, 109); boss.hp = 2; boss.shield = false; P.hitEnemy(g, boss, 2); g.player.x = g.stage.goalX; tick(g);
   assert.equal(g.state, "won"); assert.equal(g.events.filter(e => e.type === "won").length, 1);
   tick(g); assert.equal(g.events.filter(e => e.type === "won").length, 1);
 });
@@ -189,8 +189,8 @@ test("Boss armor, dive-opened weakpoint, expiry, and shield priority", () => {
   for (const id of [5,15,50]) {
     const g = fresh(id); const e = g.enemies.find(e => e.boss); g.enemies = [e];
     P.hitEnemy(g, e, 1, () => 1, "leaf"); assert.equal(e.hp, e.maxHp - .25);
-    P.hitEnemy(g, e, 2, () => 1, "dive"); assert.equal(e.openTime, 2.4);
-    const hp = e.hp; P.hitEnemy(g, e, 1, () => 1, "leaf"); assert.equal(e.hp, hp - 1);
+    tick(g, 19); P.hitEnemy(g, e, 2, () => 1, "dive"); assert.equal(e.openTime, 2.4);
+    tick(g, 46); const hp = e.hp; P.hitEnemy(g, e, 1, () => 1, "leaf"); assert.equal(e.hp, hp - 1);
     tick(g, 145); assert.equal(e.openTime, 0);
     const after = e.hp; P.hitEnemy(g, e, 1, () => 1, "leaf"); assert.equal(e.hp, after - .25);
     e.shield = true; const blocked = e.hp;

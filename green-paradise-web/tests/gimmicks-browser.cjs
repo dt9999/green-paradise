@@ -9,7 +9,7 @@ const url = process.env.TEST_URL || "http://127.0.0.1:4174";
       const page = await browser.newPage({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
       const errors = []; page.on("pageerror", e => errors.push(e.message));
       await page.addInitScript(() => localStorage.setItem("greenParadiseSaveV1", JSON.stringify({ points: 3456, unlockedStages: 50, upgrades: { jump: 4 } })));
-      await page.goto(url); assert.match(await page.locator("#version").textContent(), /0\.4\.0/);
+      await page.goto(url); assert.match(await page.locator("#version").textContent(), /0\.5\.0/);
       await page.locator("#startButton").tap();
       await page.evaluate(() => { const create = Paradise.createGame; Paradise.createGame = (...args) => (window.testGame = create(...args)); });
       await page.locator('[aria-label^="ステージ36 "]').evaluate(e => e.click());

@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "0.4.0";
+  const VERSION = "0.5.0";
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
   const GRAVITY = 1500;
@@ -16,7 +16,7 @@
     { name: "雲の上の遺跡", sub: "SKY SANCTUARY", sky: "#9ccacb", light: "#fff4da", far: "#93b7ba", near: "#648f91", soil: "#78867a", edge: "#dfdec1", accent: "#fff2b0", decor: "ruins", boss: "エンシェント・ゴーレム", skill: "quake", tip: "波と突進を使うよ。光る合図をよく見よう！" },
     { name: "さいごの大樹", sub: "HEART OF PARADISE", sky: "#698b83", light: "#efdf9e", far: "#598075", near: "#315f51", soil: "#544c3f", edge: "#c0af74", accent: "#f3ed9a", decor: "ancient", boss: "ゼロ・パラダイス", skill: "final", tip: "波・火の玉・バリアを使う最後の敵。バリアが消えたら攻撃！" },
   ];
-  const BOSSES = BIOMES.map((b, i) => ({ name: b.boss, skill: b.skill, tip: b.tip, hp: 8 + i * 2 }));
+  const BOSSES = BIOMES.map((b, i) => ({ name: b.boss, skill: b.skill, tip: b.tip, hp: 24 + i * 5 }));
   const ENEMIES = {
     crawler: { w: 44, h: 28, speed: 36, hp: 2, points: 25 },
     roller: { w: 44, h: 40, speed: 70, hp: 2, points: 35 },
@@ -49,7 +49,7 @@
     const region = Math.floor((id - 1) / 5), local = (id - 1) % 5;
     const rng = random(id * 931 + 71), platforms = [], enemies = [], crystals = [];
     let x = 0, y = FLOOR;
-    const count = id === 1 ? 5 : 6 + Math.floor(region / 3) + local;
+    const count = id === 1 ? 7 : 8 + Math.floor(region / 4) + Math.min(local, 3);
     for (let n = 0; n < count; n++) {
       // Every gap and rise is reachable with the starting jump, without upgrades.
       const width = n === 0 ? 620 : 270 + Math.floor(rng() * 170);
@@ -108,7 +108,7 @@
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
       gimmicks: G.create(stage), seenGimmicks: new Set(),
-      leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, seenEnemies: new Set(),
+      leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, bossIntro: 0, seenEnemies: new Set(),
       player: { x: 80, y: FLOOR - 52, w: 36, h: 52, vx: 0, vy: 0, facing: 1, grounded: true, dive: false,
         hp: stats(upgrades).hp, maxHp: stats(upgrades).hp, invincible: 0, coyote: .1, jumpBuffer: 0 },
       enemies: stage.enemies.map((e, i) => {
@@ -116,7 +116,7 @@
         const def = boss ? { w: 100, h: 78, hp: stage.boss.hp, speed: 36, points: 150 + stage.region * 30 } : ENEMIES[e.type];
         return { ...e, ...def, maxHp: def.hp, x: e.x, y: p.y - def.h, baseY: p.y - def.h, baseX: e.x,
           lo: p.x + 24, hi: p.x + p.w - def.w - 24, dir: -1, alive: true, age: i * .7, hit: 0,
-          shield: false, boss, cycle: 0, attack: 0, warning: false, openTime: 0,
+          shield: false, boss, cycle: 0, attack: 0, warning: false, openTime: 0, recovery: 0, phase: 1,
           intangible: false, mobTime: 0, mobVy: 0, teleportX: e.x };
       }) };
   }
@@ -147,10 +147,18 @@
   }
   function hitEnemy(g, e, damage, rng = Math.random, kind = "dive") {
     if (!e.alive || e.intangible) return false;
+    if (e.boss && (g.bossIntro > 0 || e.recovery > 0)) return false;
     if (e.shield) { particles(g, e.x + e.w / 2, e.y, "#b1f0ff", 8); emit(g, "blocked"); return false; }
     if (e.boss && kind === "leaf" && e.openTime <= 0) { damage *= .25; emit(g, "armored"); }
     if (e.boss && kind === "dive") { e.openTime = 2.4; emit(g, "weakpoint"); }
+    if (e.boss) {
+      damage = Math.min(damage, kind === "dive" ? 3.5 : 1.75);
+      e.recovery = kind === "dive" ? .75 : .3;
+    }
     e.hp -= damage; e.hit = .22;
+    if (e.boss && e.hp > 0 && e.hp <= e.maxHp / 2 && e.phase === 1) {
+      e.phase = 2; emit(g, "bossPhase"); particles(g, e.x + e.w / 2, e.y + 30, "#ffc981", 30);
+    }
     particles(g, e.x + e.w / 2, e.y + 10, "#daf5a0"); emit(g, "hit");
     if (e.hp <= 0) {
       e.alive = false; g.score += e.points; g.earned += e.points;
@@ -165,7 +173,7 @@
     return true;
   }
   function shoot(g, points) {
-    if (!g.leaf || points < 1 || g.cooldown > 0 || g.leafCharge < 1 - 1e-9 || g.state !== "playing") return false;
+    if (!g.leaf || points < 1 || g.cooldown > 0 || g.leafCharge < 1 - 1e-9 || g.state !== "playing" || g.bossIntro > 0) return false;
     const p = g.player;
     g.cooldown = .65; g.leafCharge = Math.max(0, g.leafCharge - 1);
     g.shots.push({ x: p.x + p.w / 2, y: p.y + 30, w: 18, h: 12, vx: p.facing * 460, life: .8 });
@@ -194,15 +202,15 @@
     e.cycle += dt;
     let skill = g.stage.boss.skill;
     if (skill === "final") skill = ["wave", "rain", "shield", "fan"][e.attack % 4];
-    const period = 3.8;
+    const period = e.phase === 2 ? 3 : 3.8;
     e.warning = e.cycle > period - .85;
     e.shield = skill === "shield" && e.cycle < 1.9;
-    let speed = 26;
+    let speed = e.phase === 2 ? 46 : 26;
     if ((skill === "charge" || skill === "quake") && e.cycle < .65 && e.attack > 0) speed = 280;
     if (skill === "jump") {
       // Rest first, then warn, jump, and release shockwaves on landing.
       const jumpTime = e.cycle - 1.2;
-      e.warning = e.cycle > .5 && jumpTime < 0;
+      e.warning = (e.cycle > .5 && jumpTime < 0) || (e.phase === 2 && e.cycle > period - .85);
       e.y = e.baseY - Math.sin(clamp(jumpTime / 1.1, 0, 1) * Math.PI) * 125;
       if (previousCycle < 2.3 && e.cycle >= 2.3) { attack(g, e, skill); emit(g, "bossAttack"); }
     }
@@ -212,6 +220,7 @@
     if (e.cycle >= period) {
       e.cycle = 0; e.dir = p.x < e.x ? -1 : 1;
       if (skill !== "jump") { attack(g, e, skill); emit(g, "bossAttack"); }
+      if (e.phase === 2) attack(g, e, ["fan", "wave", "rain", "wave", "fan", "fan", "wave", "wave", "storm", "quake"][g.stage.region]);
       e.attack++;
     }
   }
@@ -275,6 +284,7 @@
   }
   function step(g, input, dt, points = 0) {
     if (g.state !== "playing") return;
+    if (g.bossIntro > 0) { g.bossIntro = Math.max(0, g.bossIntro - dt); return; }
     const p = g.player, stage = g.stage;
     g.time += dt; g.cooldown = Math.max(0, g.cooldown - dt); g.shake = Math.max(0, g.shake - dt);
     const hooks = { emit, particles, damagePlayer };
@@ -298,14 +308,19 @@
     p.vy = Math.min(1000, p.vy + GRAVITY * dt); p.y += p.vy * dt; p.grounded = false;
     p.support = null;
     const boss = g.enemies.find(e => e.boss && e.alive);
-    if (boss && p.x >= boss.lo - 20) {
-      if (!g.arenaEntered) emit(g, "boss", { text: stage.boss.tip });
+    if (boss && (g.arenaEntered || p.x >= boss.lo - 20)) {
+      if (!g.arenaEntered) {
+        g.arenaEntered = true; g.bossIntro = 1.8; emit(g, "boss", { text: stage.boss.tip });
+        p.x = clamp(p.x, boss.lo - 20, stage.goalX - 150);
+        p.y = old.y; p.vy = 0; p.grounded = wasGrounded; p.support = old.support;
+        return;
+      }
       g.arenaEntered = true; p.x = clamp(p.x, boss.lo - 20, stage.goalX - 150);
     }
     // Resolve top crossings, including fast dives, before ordinary contact damage.
     for (const e of g.enemies) {
       if (!e.alive) continue;
-      e.hit = Math.max(0, e.hit - dt); e.openTime = Math.max(0, e.openTime - dt);
+      e.hit = Math.max(0, e.hit - dt); e.openTime = Math.max(0, e.openTime - dt); e.recovery = Math.max(0, e.recovery - dt);
       if (e.boss) updateBoss(g, e, dt);
       else updateMob(g, e, input, dt);
       if (e.intangible) continue;
