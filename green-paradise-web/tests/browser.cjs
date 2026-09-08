@@ -75,6 +75,7 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       await activate("#dailyButton");
       const points = await page.locator("#points").textContent();
       await activate("#dailyButton"); assert.equal(await page.locator("#points").textContent(), points);
+      await activate("#supportButton"); await activate("#adButton");
       await activate("#resumeButton");
       // Collect a real drop and verify the conditional leaf control.
       await page.evaluate(() => { testGame.drops.push({ x: testGame.player.x, y: testGame.player.y, w: 26, h: 26, vy: 0 }); });
@@ -137,7 +138,23 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     await page.addInitScript(() => localStorage.setItem("greenParadiseSaveV1", JSON.stringify({ points: 2000, unlockedStages: 50 })));
     await page.goto(url); await page.locator("#startButton").click();
-    await page.evaluate(() => { const create = Paradise.createGame; Paradise.createGame = (...args) => (window.testGame = create(...args)); });
+    await page.evaluate(() => {
+      const create = Paradise.createGame; Paradise.createGame = (...args) => (window.testGame = create(...args));
+      const select = ParadiseMusic.select; ParadiseMusic.select = (...args) => (window.testScore = select(...args));
+    });
+    for (let r = 0; r < 10; r++) {
+      await page.locator("#regionTabs button").nth(r).click();
+      await page.locator(`[aria-label^="ステージ${r * 5 + 1} "]`).click();
+      assert.ok(await page.evaluate(r => testScore === ParadiseMusic.TRACKS[r], r));
+      await page.evaluate(r => {
+        const e = testGame.enemies.find(e => e.type === Paradise.REGION_ENEMIES[r]);
+        e.mobTime = e.type === "burrower" ? 2 : 0;
+        testGame.player.x = e.x - 100; testGame.player.y = e.baseY + e.h - 52;
+        testGame.camera = Math.max(0, e.x - 480); testGame.player.invincible = 100;
+      }, r);
+      await page.waitForTimeout(150); await snapshot(page, `new-enemy-${r}`);
+      await page.locator("#menuButton").click(); await page.locator("#mapFromMenu").click();
+    }
     for (const id of [5,10,15,20,25,30,35,40,45,50]) {
       await page.locator(`#regionTabs button`).nth(id / 5 - 1).click();
       await page.locator(`[aria-label^="ステージ${id} "]`).click();
@@ -164,6 +181,6 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       await page.locator(id === 50 ? "#ending [data-map]" : "#result [data-map]").click();
     }
     assert.deepEqual(errors, []);
-    console.log("PASS 10 boss renders, real dive defeat, tree clear, final ending and map return");
+    console.log("PASS 10 new enemy renders, area music selection, 10 boss renders, real dive defeat, tree clear, final ending and map return");
   } finally { await bossBrowser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

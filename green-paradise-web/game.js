@@ -50,13 +50,14 @@
     if (!playing) return;
     $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${game.stage.biome.name}`;
     $("hearts").textContent = "♥".repeat(Math.max(0, game.player.hp)) + "♡".repeat(game.player.maxHp - Math.max(0, game.player.hp));
-    $("leafStatus").textContent = game.leaf ? "葉っぱ OK · E / 葉っぱボタン · 1pt" : "葉っぱアイテムで特別技が使えるよ";
-    $("leafButton").disabled = save.points < 1;
+    const charges = Math.floor(game.leafCharge + 1e-9);
+    $("leafStatus").textContent = game.leaf ? `葉っぱ ${"●".repeat(charges)}${"○".repeat(3 - charges)} · 2秒で1発回復 · 1pt` : "葉っぱアイテムで特別技が使えるよ";
+    $("leafButton").disabled = save.points < 1 || charges < 1;
     const boss = game.enemies.find(e => e.boss && e.alive);
     if (boss && game.arenaEntered) {
       $("bossHud").hidden = false;
       $("bossName").textContent = game.stage.boss.name;
-      $("bossTip").textContent = boss.shield ? "バリア中！ 消えたら攻撃" : boss.warning ? "攻撃がくるよ！" : "上から急降下！";
+      $("bossTip").textContent = boss.shield ? "バリア中！ 消えたら攻撃" : boss.openTime > 0 ? `弱点オープン ${boss.openTime.toFixed(1)}秒！ 葉っぱで追撃！` : boss.warning ? "攻撃がくるよ！" : "葉っぱに強い装甲！ 急降下で弱点を開こう";
       $("bossHealth").max = boss.maxHp; $("bossHealth").value = Math.max(0, boss.hp);
     }
   }
@@ -92,9 +93,12 @@
   function renderShop() {
     const items = $("shopItems"); items.replaceChildren();
     P.UPGRADES.forEach((u, i) => {
-      const level = save.upgrades[u.id], cost = u.cost + level * 60;
+      const level = save.upgrades[u.id], cost = P.upgradeCost(u, level);
       const card = document.createElement("article"); card.className = "shop-card";
       card.innerHTML = `<span class="shop-number">UPGRADE ${String(i + 1).padStart(2, "0")}</span><h4>${u.name}</h4><span class="upgrade-level">${"●".repeat(level)}${"○".repeat(u.max - level)}</span><p>${u.text}<br>レベル ${level} / ${u.max}</p>`;
+      const current = P.stats(save.upgrades), next = P.stats({ ...save.upgrades, [u.id]: Math.min(u.max, level + 1) });
+      const value = s => u.id === "dropRate" ? `${(s.drop * 100).toFixed(1)}%` : u.id === "energy" ? `${s.hp}ハート / 無敵${s.safety.toFixed(2)}秒` : String(s[u.id]);
+      const preview = document.createElement("p"); preview.textContent = `今 ${value(current)}${level < u.max ? ` → 次 ${value(next)}` : ""}`; card.append(preview);
       const button = document.createElement("button"); button.className = "small-button";
       button.textContent = level >= u.max ? "最大レベル！" : `${cost} pt で強化`;
       button.disabled = level >= u.max || save.points < cost;
@@ -116,7 +120,7 @@
   function startStage(id) {
     if (id > save.unlockedStages) return;
     game = P.createGame(P.STAGES[id - 1], save); tutorialStep = -1; accumulator = 0;
-    show("play"); sound.theme("stage");
+    show("play"); sound.theme("stage", game.stage.region);
     toast(game.stage.boss ? `この先に ${game.stage.boss.name} がいるよ。` : `${game.stage.name} · 大きな木まで進もう。`);
   }
   function goMap() {
@@ -150,7 +154,10 @@
       else {
         sound.effect(e.type);
         if (e.type === "drop") toast("葉っぱアイテムが出た！ 拾うとこのステージで発射できるよ。");
-        if (e.type === "pickup" && e.leaf) toast("葉っぱの力をゲット！ E / 葉っぱボタンで発射。1発1pt。");
+        if (e.type === "pickup" && e.leaf) toast("葉っぱの力！ 3発分のゲージ、2秒で1発回復。Eで発射・1発1pt。");
+        if (e.type === "newEnemy") toast(e.text);
+        if (e.type === "weakpoint") toast("弱点が開いた！ 2.4秒間、葉っぱで追撃できるよ！");
+        if (e.type === "armored") toast("装甲には葉っぱが効きにくい！ 急降下で弱点を開こう。");
         if (e.type === "boss") toast(e.text);
         if (e.type === "bossDefeat") toast("ボスをたおした！ 大きな木へ進もう。");
         if (e.type === "blocked") toast("バリアが消えるのを待って攻撃しよう！");
@@ -248,23 +255,26 @@
   document.addEventListener("visibilitychange", () => { clearInput(); writeSave(); if (document.hidden && currentScreen === "play" && !$("menu").open) openMenu(); });
   window.addEventListener("pagehide", writeSave); window.addEventListener("resize", resize);
   $("points").textContent = save.points; $("version").textContent = `バージョン ${P.VERSION}`;
+  $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスの装甲には威力25%。急降下で2.4秒間、弱点が開きます。"));
   resize(); show("title"); requestAnimationFrame(frame);
 
   function createSound() {
-    let audio = null, master = null, timer = null, theme = "title", beat = 0, muted = false, paused = false;
-    const themes = { title: [60,64,67,72,71,67,64,62], stage: [60,67,69,67,64,67,62,64], shop: [65,69,72,69,67,64,62,64], clear: [60,64,67,72,76,74,72,79], lost: [64,62,60,55,57,55,52,48], ending: [60,64,67,72,69,72,76,79] };
+    let audio = null, master = null, timer = null, score = window.ParadiseMusic.select("title"), beat = 0, muted = false, paused = false;
     function note(midi, len, volume = .035, type = "sine") {
-      if (!audio || muted || paused) return;
+      if (!audio || muted || paused || midi === null) return;
       const osc = audio.createOscillator(), gain = audio.createGain(), now = audio.currentTime;
       osc.type = type; osc.frequency.value = 440 * 2 ** ((midi - 69) / 12);
       gain.gain.setValueAtTime(.0001, now); gain.gain.exponentialRampToValueAtTime(volume, now + .015); gain.gain.exponentialRampToValueAtTime(.0001, now + len);
       osc.connect(gain).connect(master); osc.start(); osc.stop(now + len); osc.onended = () => { osc.disconnect(); gain.disconnect(); };
     }
     function tick() {
-      const notes = themes[theme] || themes.title;
-      note(notes[beat % notes.length], .4, .024, "triangle");
-      if (beat % 4 === 0) note(notes[0] - 24, 1.25, .02);
-      beat++; timer = setTimeout(tick, theme === "stage" ? 240 : 360);
+      if (!paused && !muted) {
+        note(score.notes[beat % score.notes.length], score.stepMs / 1000 * 1.2, score.wave === "square" || score.wave === "sawtooth" ? .009 : .024, score.wave);
+        const meter = score.meter || 4;
+        if (beat % meter === 0) note(score.bass[Math.floor(beat / meter) % score.bass.length], score.stepMs / 1000 * meter, .018);
+        beat++;
+      }
+      timer = setTimeout(tick, score.stepMs);
     }
     function unlock() {
       try {
@@ -273,7 +283,7 @@
       } catch { /* Audio support must never block menu navigation. */ }
     }
     return { unlock,
-      theme(next) { theme = next; beat = 0; },
+      theme(next, region = 0) { score = window.ParadiseMusic.select(next, region); beat = 0; if (timer) clearTimeout(timer); timer = null; if (audio) tick(); },
       pause() { paused = true; if (audio) void audio.suspend().catch(() => {}); },
       resume() { paused = false; if (audio) void audio.resume().catch(() => {}); },
       toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; if (!muted) unlock(); return muted; },

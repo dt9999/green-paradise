@@ -89,4 +89,7 @@ dialog { border: 1px solid #fff8; border-radius: 24px; background: var(--paper);
   .stage-node small { display: none; }
   .ending-card { padding: 18px; width: min(510px, 48vw); }
   .boss-hud { left: 36%; right: 16px; }
+  .play-hud { max-width: 33vw; }
 }
+.boss-hud div { flex-wrap: wrap; }
+#bossTip { display: block; font-size: 10px; }

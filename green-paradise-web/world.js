@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "0.2.0";
+  const VERSION = "0.3.0";
   const FLOOR = 430;
   const GRAVITY = 1500;
   const BIOMES = [
@@ -22,7 +22,23 @@
     hopper: { w: 40, h: 36, speed: 28, hp: 2, points: 40 },
     drone: { w: 46, h: 30, speed: 44, hp: 2, points: 45 },
     tank: { w: 58, h: 42, speed: 24, hp: 4, points: 60 },
+    stump: { name: "キリカブン", tip: "止まってから小走りする切り株ロボ。", w: 42, h: 34, speed: 65, hp: 2, points: 30 },
+    burrower: { name: "スナモグラ", tip: "砂にもぐるよ。顔を出したら急降下！", w: 44, h: 32, speed: 32, hp: 2, points: 35 },
+    prism: { name: "カガミバット", tip: "8の字に飛ぶよ。低く来たところをねらおう。", w: 42, h: 32, speed: 0, hp: 2, points: 40 },
+    piston: { name: "プレスロボ", tip: "その場で上下にジャンプするよ。", w: 48, h: 46, speed: 0, hp: 3, points: 45 },
+    spore: { name: "ホウシダケ", tip: "光ったあと、ゆっくり胞子を飛ばすよ。", w: 46, h: 38, speed: 0, hp: 3, points: 45 },
+    skater: { name: "ツルリン", tip: "すべり出すと速い！ ブレーキ中がチャンス。", w: 42, h: 34, speed: 145, hp: 3, points: 45 },
+    swooper: { name: "カゼカラス", tip: "羽が光ったら低く飛びこんでくるよ。", w: 48, h: 30, speed: 52, hp: 3, points: 50 },
+    blink: { name: "カゲボタル", tip: "光の輪にワープするよ。現れる場所を見よう。", w: 38, h: 34, speed: 22, hp: 3, points: 50 },
+    sentinel: { name: "イシノバンニン", tip: "光ったら地面の波がくる！ ジャンプでよけよう。", w: 54, h: 48, speed: 18, hp: 4, points: 60 },
+    mimic: { name: "コピーグリーン", tip: "きみのジャンプをまねするロボだよ。", w: 36, h: 52, speed: 45, hp: 4, points: 60 },
   };
+  const REGION_ENEMIES = ["stump", "burrower", "prism", "piston", "spore", "skater", "swooper", "blink", "sentinel", "mimic"];
+  const COST_MULTIPLIERS = [1, 2, 4, 7, 12, 20, 32];
+  const upgradeCost = (upgrade, level) => level >= upgrade.max ? null : upgrade.cost * COST_MULTIPLIERS[level];
+  const stats = u => ({ jump: 550 + 16 * u.jump, speed: 205 + 10 * u.speed,
+    hp: 4 + Math.ceil(u.energy / 2), safety: 1.4 + .03 * u.energy,
+    damage: 2 + .5 * u.damage, drop: (100 + 15 * u.dropRate) / 1000 });
   function random(seed) {
     return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   }
@@ -40,8 +56,11 @@
       platforms.push(p);
       if (n > 0) {
         const types = ["crawler", "roller", "hopper", "drone", "tank"];
-        const type = id === 1 ? "crawler" : types[(n + region + local) % Math.min(5, 2 + region)];
-        if (id !== 1 || n === 2) enemies.push({ type, x: x + width * .55, platform: n });
+        let type = types[(n + region + local) % Math.min(5, 2 + region)];
+        if (n === 1 || n % 3 === 0) type = REGION_ENEMIES[region];
+        else if (region > 0 && local >= 2 && n % 3 === 2) type = REGION_ENEMIES[region - 1];
+        if (id === 1) type = n === 3 ? "stump" : "crawler";
+        if (id !== 1 || n === 2 || n === 3) enemies.push({ type, x: x + width * .55, platform: n });
         crystals.push({ x: x + 64, y: y - 66, w: 16, h: 20 });
       }
       x += width + (id === 1 ? 62 : 60 + Math.floor(rng() * (24 + region * 3)));
@@ -63,11 +82,11 @@
   }
   const STAGES = Array.from({ length: 50 }, (_, i) => makeStage(i + 1));
   const UPGRADES = [
-    { id: "jump", name: "ジャンプ", text: "もっと高くとべる", cost: 90, max: 4 },
-    { id: "speed", name: "スピード", text: "移動が少し速くなる", cost: 80, max: 4 },
-    { id: "energy", name: "エネルギー", text: "ハートが1つ増える", cost: 110, max: 4 },
-    { id: "dropRate", name: "アイテム運", text: "葉っぱの出る確率 +3%", cost: 120, max: 4 },
-    { id: "damage", name: "こうげき", text: "急降下 +1 / 葉っぱ +0.5", cost: 140, max: 4 },
+    { id: "jump", name: "ジャンプ", text: "少しずつ高くとべる", cost: 180, max: 7 },
+    { id: "speed", name: "スピード", text: "1レベルごとに速さ +10", cost: 160, max: 7 },
+    { id: "energy", name: "エネルギー", text: "奇数レベルでハート+1／毎回、無敵時間も少し延長", cost: 220, max: 7 },
+    { id: "dropRate", name: "アイテム運", text: "葉っぱの出る確率 +1.5%", cost: 240, max: 7 },
+    { id: "damage", name: "こうげき", text: "急降下 +0.5 / 葉っぱ +0.25", cost: 280, max: 7 },
   ];
   function sanitizeSave(raw) {
     raw = raw && typeof raw === "object" ? raw : {};
@@ -86,15 +105,16 @@
     const upgrades = { ...save.upgrades };
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
-      leaf: false, cooldown: 0, shake: 0, arenaEntered: false,
+      leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, seenEnemies: new Set(),
       player: { x: 80, y: FLOOR - 52, w: 36, h: 52, vx: 0, vy: 0, facing: 1, grounded: true, dive: false,
-        hp: 4 + upgrades.energy, maxHp: 4 + upgrades.energy, invincible: 0, coyote: .1, jumpBuffer: 0 },
+        hp: stats(upgrades).hp, maxHp: stats(upgrades).hp, invincible: 0, coyote: .1, jumpBuffer: 0 },
       enemies: stage.enemies.map((e, i) => {
         const p = stage.platforms[e.platform], boss = e.type === "boss";
         const def = boss ? { w: 100, h: 78, hp: stage.boss.hp, speed: 36, points: 150 + stage.region * 30 } : ENEMIES[e.type];
         return { ...e, ...def, maxHp: def.hp, x: e.x, y: p.y - def.h, baseY: p.y - def.h, baseX: e.x,
           lo: p.x + 24, hi: p.x + p.w - def.w - 24, dir: -1, alive: true, age: i * .7, hit: 0,
-          shield: false, boss, cycle: 0, attack: 0, warning: false };
+          shield: false, boss, cycle: 0, attack: 0, warning: false, openTime: 0,
+          intangible: false, mobTime: 0, mobVy: 0, teleportX: e.x };
       }) };
   }
   function emit(g, type, data = {}) { g.events.push({ type, ...data }); }
@@ -118,13 +138,15 @@
   function damagePlayer(g) {
     const p = g.player;
     if (p.invincible > 0 || g.state !== "playing") return;
-    p.hp--; p.invincible = 1.4; p.vy = -250; p.dive = false; g.shake = .15;
+    p.hp--; p.invincible = stats(g.upgrades).safety; p.vy = -250; p.dive = false; g.shake = .15;
     emit(g, "hurt");
     if (p.hp <= 0) { g.state = "lost"; emit(g, "lost", { reason: "エネルギーがなくなった。強化してまた挑戦しよう。" }); }
   }
-  function hitEnemy(g, e, damage, rng = Math.random) {
-    if (!e.alive) return false;
+  function hitEnemy(g, e, damage, rng = Math.random, kind = "dive") {
+    if (!e.alive || e.intangible) return false;
     if (e.shield) { particles(g, e.x + e.w / 2, e.y, "#b1f0ff", 8); emit(g, "blocked"); return false; }
+    if (e.boss && kind === "leaf" && e.openTime <= 0) { damage *= .25; emit(g, "armored"); }
+    if (e.boss && kind === "dive") { e.openTime = 2.4; emit(g, "weakpoint"); }
     e.hp -= damage; e.hit = .22;
     particles(g, e.x + e.w / 2, e.y + 10, "#daf5a0"); emit(g, "hit");
     if (e.hp <= 0) {
@@ -132,7 +154,7 @@
       emit(g, "points", { amount: e.points }); emit(g, "defeat", { points: e.points });
       const platform = g.stage.platforms[e.platform];
       grass(g, e.x + e.w / 2, e.boss ? 220 : 80, platform.y);
-      if (rng() < .1 + .03 * g.upgrades.dropRate) {
+      if (rng() < stats(g.upgrades).drop) {
         g.drops.push({ x: e.x + e.w / 2 - 13, y: e.y, w: 26, h: 26, vy: -100 }); emit(g, "drop");
       }
       if (e.boss) { g.hazards = []; g.shake = .3; emit(g, "bossDefeat"); }
@@ -140,10 +162,10 @@
     return true;
   }
   function shoot(g, points) {
-    if (!g.leaf || points < 1 || g.cooldown > 0 || g.state !== "playing") return false;
+    if (!g.leaf || points < 1 || g.cooldown > 0 || g.leafCharge < 1 - 1e-9 || g.state !== "playing") return false;
     const p = g.player;
-    g.cooldown = .26;
-    g.shots.push({ x: p.x + p.w / 2, y: p.y + 30, w: 18, h: 12, vx: p.facing * 460, life: 1.4 });
+    g.cooldown = .65; g.leafCharge = Math.max(0, g.leafCharge - 1);
+    g.shots.push({ x: p.x + p.w / 2, y: p.y + 30, w: 18, h: 12, vx: p.facing * 460, life: .8 });
     emit(g, "points", { amount: -1 }); emit(g, "shoot"); return true;
   }
   function attack(g, e, kind) {
@@ -190,21 +212,80 @@
       e.attack++;
     }
   }
+  function updateMob(g, e, input, dt) {
+    const p = g.player, previous = e.mobTime;
+    const near = Math.abs(p.x - e.x) < 580;
+    e.age += dt;
+    if (near) e.mobTime += dt;
+    const phase = e.mobTime % 4, oldPhase = previous % 4;
+    const crossed = t => oldPhase < t && phase >= t;
+    let speed = e.speed;
+    e.warning = false; e.intangible = false;
+    if (e.type === "stump") speed = phase < 1.4 ? 0 : e.speed;
+    if (e.type === "burrower") {
+      e.intangible = phase < 1.8; e.warning = phase > 1.2 && phase < 1.8;
+      speed = e.intangible ? 0 : e.speed;
+    }
+    if (e.type === "prism") {
+      e.x = clamp(e.baseX + Math.sin(e.age * 1.7) * 70, e.lo, e.hi);
+      e.y = e.baseY - 40 + Math.sin(e.age * 3.4) * 30;
+    }
+    if (e.type === "piston") {
+      e.warning = phase > .5 && phase < 1.1;
+      e.y = e.baseY - Math.sin(clamp((phase - 1.1) / 1.2, 0, 1) * Math.PI) * 86;
+    }
+    if (e.type === "spore" || e.type === "sentinel") {
+      e.warning = near && phase > 1.8 && phase < 2.6;
+      if (e.warning) speed = 0;
+      if (near && crossed(2.6)) {
+        const wave = e.type === "sentinel";
+        g.hazards.push({ x: e.x + e.w / 2, y: e.baseY + e.h - (wave ? 18 : 38),
+          w: 18, h: 18, vx: (p.x < e.x ? -1 : 1) * (wave ? 135 : 80), vy: 0,
+          life: 1.6, delay: 0, kind: wave ? "wave" : "spore" });
+      }
+    }
+    if (e.type === "skater") { speed = e.speed * Math.max(0, Math.sin(phase / 4 * Math.PI)); e.warning = phase < .45; }
+    if (e.type === "swooper") {
+      e.warning = phase > .5 && phase < 1.2;
+      const swoop = Math.sin(clamp((phase - 1.2) / 1.4, 0, 1) * Math.PI);
+      e.y = e.baseY - 66 + swoop * 58; speed = 35 + swoop * 125;
+    }
+    if (e.type === "blink") {
+      if (near && crossed(1.5)) e.teleportX = e.x < (e.lo + e.hi) / 2 ? e.hi - 20 : e.lo + 20;
+      e.intangible = phase >= 1.5 && phase < 3;
+      e.warning = e.intangible; speed = e.intangible ? 0 : e.speed;
+      if (near && crossed(2.3)) e.x = e.teleportX;
+    }
+    if (e.type === "mimic") {
+      if (near && input.jump && e.y >= e.baseY && e.mobVy >= 0) e.mobVy = -420;
+      e.mobVy += GRAVITY * dt; e.y = Math.min(e.baseY, e.y + e.mobVy * dt);
+      if (e.y === e.baseY) e.mobVy = 0;
+      if (near) { e.dir = p.x < e.x ? -1 : 1; speed = Math.abs(p.x - e.x) < 110 ? 0 : e.speed; }
+    }
+    e.x += speed * e.dir * dt;
+    if (e.x < e.lo || e.x > e.hi) { e.x = clamp(e.x, e.lo, e.hi); e.dir *= -1; }
+    if (e.type === "drone") e.y = e.baseY - 52 + Math.sin(e.age * 2) * 25;
+    if (e.type === "hopper") e.y = e.baseY - Math.max(0, Math.sin(e.age * 2.4)) * 65;
+    if (near && ENEMIES[e.type].name && !g.seenEnemies.has(e.type)) {
+      g.seenEnemies.add(e.type); emit(g, "newEnemy", { text: `${ENEMIES[e.type].name}：${ENEMIES[e.type].tip}` });
+    }
+  }
   function step(g, input, dt, points = 0) {
     if (g.state !== "playing") return;
     const p = g.player, stage = g.stage;
     g.time += dt; g.cooldown = Math.max(0, g.cooldown - dt); g.shake = Math.max(0, g.shake - dt);
+    if (g.leaf) g.leafCharge = Math.min(3, g.leafCharge + dt / 2);
     p.invincible = Math.max(0, p.invincible - dt);
     p.coyote = p.grounded ? .1 : Math.max(0, p.coyote - dt);
     if (input.jump) p.jumpBuffer = .12;
     else p.jumpBuffer = Math.max(0, p.jumpBuffer - dt);
     if (p.jumpBuffer > 0 && p.coyote > 0) {
-      p.vy = -(550 + 28 * g.upgrades.jump); p.grounded = false; p.coyote = 0; p.jumpBuffer = 0; p.dive = false; emit(g, "jump");
+      p.vy = -stats(g.upgrades).jump; p.grounded = false; p.coyote = 0; p.jumpBuffer = 0; p.dive = false; emit(g, "jump");
     }
     if (input.dive && !p.grounded) { p.dive = true; p.vy = 820; emit(g, "dive"); }
     if (input.shoot) shoot(g, points);
     const move = Number(!!input.right) - Number(!!input.left);
-    p.vx = move * (205 + 18 * g.upgrades.speed);
+    p.vx = move * stats(g.upgrades).speed;
     if (move) p.facing = move;
     const old = { x: p.x, y: p.y, bottom: p.y + p.h };
     const wasGrounded = p.grounded;
@@ -218,18 +299,14 @@
     // Resolve top crossings, including fast dives, before ordinary contact damage.
     for (const e of g.enemies) {
       if (!e.alive) continue;
-      e.hit = Math.max(0, e.hit - dt); e.age += dt;
+      e.hit = Math.max(0, e.hit - dt); e.openTime = Math.max(0, e.openTime - dt);
       if (e.boss) updateBoss(g, e, dt);
-      else {
-        e.x += e.speed * e.dir * dt;
-        if (e.x < e.lo || e.x > e.hi) { e.x = clamp(e.x, e.lo, e.hi); e.dir *= -1; }
-        if (e.type === "drone") e.y = e.baseY - 52 + Math.sin(e.age * 2) * 25;
-        if (e.type === "hopper") e.y = e.baseY - Math.max(0, Math.sin(e.age * 2.4)) * 65;
-      }
+      else updateMob(g, e, input, dt);
+      if (e.intangible) continue;
       const crosses = p.vy > 0 && old.bottom <= e.y + 12 && p.y + p.h >= e.y && p.y < e.y + e.h;
       const across = p.x + p.w > e.x && p.x < e.x + e.w;
       if (across && crosses && p.dive) {
-        hitEnemy(g, e, 2 + g.upgrades.damage); p.y = e.y - p.h - 1; p.vy = -480; p.dive = false;
+        hitEnemy(g, e, stats(g.upgrades).damage); p.y = e.y - p.h - 1; p.vy = -480; p.dive = false;
       } else if (overlap(p, e)) damagePlayer(g);
     }
     for (const floor of stage.platforms) {
@@ -249,8 +326,8 @@
       const prevX = s.x; s.x += s.vx * dt; s.life -= dt;
       const sweep = { ...s, x: Math.min(prevX, s.x), w: s.w + Math.abs(s.x - prevX) };
       if (stage.platforms.some(f => overlap(sweep, f))) return false;
-      const e = g.enemies.find(e => e.alive && overlap(sweep, e));
-      if (e) { hitEnemy(g, e, (2 + g.upgrades.damage) / 2); return false; }
+      const e = g.enemies.find(e => e.alive && !e.intangible && overlap(sweep, e));
+      if (e) { hitEnemy(g, e, stats(g.upgrades).damage / 2, undefined, "leaf"); return false; }
       return s.life > 0;
     });
     g.drops = g.drops.filter(d => {
@@ -276,7 +353,7 @@
       g.state = "won"; emit(g, "won");
     }
   }
-  const api = { VERSION, FLOOR, GRAVITY, BIOMES, BOSSES, STAGES, UPGRADES, clamp, overlap, random, sanitizeSave, createGame, step, hitEnemy, shoot, grass };
+  const api = { VERSION, FLOOR, GRAVITY, BIOMES, BOSSES, ENEMIES, REGION_ENEMIES, STAGES, UPGRADES, upgradeCost, stats, clamp, overlap, random, sanitizeSave, createGame, step, hitEnemy, shoot, grass };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Paradise = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
