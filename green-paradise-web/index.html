@@ -1,207 +1,59 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#15321f" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="グリーンパラダイス" />
-    <title>グリーンパラダイス</title>
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <main class="game-shell">
-      <div id="rotateHint" class="rotate-hint">
-        <div class="rotate-card">
-          <div class="rotate-icon">↻</div>
-          <div class="rotate-title">スマホを横にしてね</div>
-          <div class="rotate-text">横画面のほうが遊びやすいように作ってあります。</div>
-        </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#244e40">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="グリーンパラダイス">
+  <title>グリーンパラダイス | 50の冒険</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=0.2.0">
+</head>
+<body data-screen="title">
+  <canvas id="gameCanvas" aria-label="グリーンの冒険の風景"></canvas>
+  <header class="topbar">
+    <button id="menuButton" class="small-button" aria-controls="menu" aria-expanded="false">☰ メニュー</button>
+    <span class="wordmark">GREEN PARADISE <small>FIELD NOTES / 50</small></span>
+    <span class="wallet"><span aria-hidden="true">✦</span> <b id="points">0</b> <small>pt</small></span>
+  </header>
+  <main>
+    <section id="title" class="screen title-screen">
+      <div class="title-copy">
+        <p class="eyebrow">A LITTLE ROBOT. A GREENER WORLD.</p>
+        <h1>グリーン<br><span>パラダイス</span></h1>
+        <p class="lead">その小さな一歩が、<br>世界をみどりに変えていく。</p>
+        <div class="title-facts"><span>10 の世界</span><span>50 の冒険</span><span>10 体のボス</span></div>
+        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 0.2.0</small></div>
+        <p class="title-hint">A・D 移動 ／ W ジャンプ ／ S 急降下<br>スマホは画面のボタンで遊べます</p>
       </div>
-
-      <div class="top-bar">
-        <button id="menuToggleButton" class="icon-button">メニュー</button>
-        <div class="top-bar-stats">
-          <div class="compact-pill">ポイント <span id="pointsValue">0</span></div>
-          <div class="compact-pill">ステージ <span id="highestStageValue">1</span></div>
-          <div class="compact-pill">エネルギー <span id="energyValue">3</span></div>
-        </div>
-      </div>
-
-      <aside id="sideMenu" class="side-menu">
-        <div class="hud-card">
-          <div class="menu-header">
-            <h1>グリーンパラダイス</h1>
-            <button id="menuCloseButton" class="icon-button small-icon">×</button>
-          </div>
-          <p class="subtitle">ロボット「グリーン」が、あれた世界に草木を取りもどすアクションゲーム。</p>
-          <div class="stats-row">
-            <div class="pill">ポイント <span id="pointsValueMenu">0</span></div>
-            <div class="pill">最大ステージ <span id="highestStageValueMenu">1</span></div>
-            <div class="pill">エネルギー <span id="energyValueMenu">3</span></div>
-          </div>
-          <div class="reward-buttons">
-            <button id="bonusTapButton" class="menu-button small">応援ボタン +5</button>
-            <button id="dailyBonusButton" class="menu-button small accent">デイリーボーナス</button>
-            <button id="adBonusButton" class="menu-button small">広告を見る +30</button>
-          </div>
-          <div id="messageBox" class="message-box">右に進んで世界をみどりにしよう。</div>
-        </div>
-      </aside>
-
-      <div id="menuBackdrop" class="menu-backdrop"></div>
-
-      <section class="game-panel">
-        <canvas id="gameCanvas" width="1280" height="720" aria-label="グリーンパラダイスのゲーム画面"></canvas>
-
-        <section id="titleScreen" class="overlay active">
-          <div class="panel title-panel wide">
-            <div class="title-layout">
-              <div class="title-copy">
-                <p class="eyebrow">Green Paradise</p>
-                <h2 class="title-heading">グリーンパラダイス</h2>
-                <p class="title-lead">歩くだけで草が生えるロボット「グリーン」と、あれた世界にみどりを取りもどそう。</p>
-                <div class="title-badges">
-                  <span class="title-badge">5ステージ</span>
-                  <span class="title-badge">ショップあり</span>
-                  <span class="title-badge">ボスせんあり</span>
-                </div>
-                <div class="controls-list title-controls">
-                  <div>左右に進む: <strong>A D</strong> または <strong>← →</strong></div>
-                  <div>ジャンプ: <strong>Space</strong> / <strong>W</strong> / <strong>↑</strong></div>
-                  <div>葉っぱ発射: 敵が落とす葉っぱアイテムを拾うと <strong>E</strong> で使える</div>
-                  <div>急降下: ジャンプ中に <strong>↓</strong> / <strong>S</strong></div>
-                </div>
-                <div class="title-tip">
-                  <strong>ポイント:</strong> 草を生やす、敵を倒す、クリアすることで増えるよ。
-                </div>
-                <div class="start-area">
-                  <button id="startButton" class="menu-button primary">スタート</button>
-                  <div class="version-note">バージョン <span id="gameVersion">0.1.2</span></div>
-                </div>
-              </div>
-              <div class="title-visual" aria-hidden="true">
-                <div class="title-sun"></div>
-                <div class="title-hill hill-back"></div>
-                <div class="title-hill hill-front"></div>
-                <div class="title-tree">
-                  <div class="title-tree-trunk"></div>
-                  <div class="title-tree-crown"></div>
-                </div>
-                <div class="title-robot">
-                  <div class="robot-eye eye-left"></div>
-                  <div class="robot-eye eye-right"></div>
-                </div>
-                <div class="grass-cluster cluster-left"></div>
-                <div class="grass-cluster cluster-center"></div>
-                <div class="grass-cluster cluster-right"></div>
-              </div>
-            </div>
-            <div class="title-footer">
-              <span>大きな木にふれるとステージクリア</span>
-              <span>急降下で敵の上から当たると倒せる</span>
-            </div>
-          </div>
-        </section>
-
-        <section id="stageSelectScreen" class="overlay">
-          <div class="panel wide">
-            <h2>ステージ選択</h2>
-            <p>地図の上のステージをえらぼう。あとでステージが増えても、横にスクロールして広げられるようになっているよ。</p>
-            <div class="stage-map-wrap">
-              <div id="stageMap" class="stage-map"></div>
-            </div>
-            <div class="menu-row">
-              <button id="openShopButton" class="menu-button">ショップ</button>
-              <button id="openEndingButton" class="menu-button ghost">エンディングを見る</button>
-            </div>
-          </div>
-        </section>
-
-        <section id="shopScreen" class="overlay">
-          <div class="panel wide shop-panel">
-            <div class="shop-panel-head">
-              <div>
-                <h2>ショップ</h2>
-                <p>ポイントでグリーンを強くしよう。</p>
-              </div>
-              <button id="closeShopButton" class="menu-button ghost">地図へ戻る</button>
-            </div>
-            <div class="shop-scroll-frame">
-              <div class="shop-scroll-label">ここをスクロール</div>
-              <div class="shop-scroll-area">
-                <div id="shopItems" class="shop-grid"></div>
-                <div id="unlockItems" class="shop-grid"></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="clearScreen" class="overlay">
-          <div class="panel">
-            <h2>ステージクリア</h2>
-            <p id="clearSummary"></p>
-            <button id="clearToSelectButton" class="menu-button primary">ステージ選択へ</button>
-          </div>
-        </section>
-
-        <section id="gameOverScreen" class="overlay">
-          <div class="panel">
-            <h2>ゲームオーバー</h2>
-            <p id="gameOverSummary">穴に落ちるとゲームオーバー。もう一度チャレンジしよう。</p>
-            <div class="menu-row">
-              <button id="retryButton" class="menu-button primary">もう一回</button>
-              <button id="gameOverToSelectButton" class="menu-button">ステージ選択へ</button>
-            </div>
-          </div>
-        </section>
-
-        <section id="endingScreen" class="overlay">
-          <div class="panel wide ending-panel">
-            <div class="ending-badge">WORLD SAVED</div>
-            <h2 class="ending-title">エンディング</h2>
-            <div class="ending-cheer">CONGRATULATIONS!</div>
-            <p class="ending-subtitle">グリーンが、あれた世界にみどりと希望を取りもどした。</p>
-            <p id="endingText">グリーンが世界を救い、あれた大地にみどりがもどっていく。</p>
-            <div id="endingScene" class="ending-scene">
-              <span class="petal petal-1"></span>
-              <span class="petal petal-2"></span>
-              <span class="petal petal-3"></span>
-              <span class="petal petal-4"></span>
-              <span class="petal petal-5"></span>
-              <span class="petal petal-6"></span>
-            </div>
-            <button id="endingToSelectButton" class="menu-button primary">ステージ選択へ戻る</button>
-          </div>
-        </section>
-
-        <div id="touchControls" class="touch-controls">
-          <div class="touch-cluster touch-left">
-            <button data-control="left" class="touch-button move image-touch" aria-label="左へ移動">
-              <img class="touch-image" src="./assets/touch-left.svg" alt="" draggable="false" />
-            </button>
-            <button data-control="right" class="touch-button move image-touch" aria-label="右へ移動">
-              <img class="touch-image" src="./assets/touch-right.svg" alt="" draggable="false" />
-            </button>
-          </div>
-          <div class="touch-cluster touch-right">
-            <button data-control="leaf" id="leafTouchButton" class="touch-button leaf image-touch hidden-touch" aria-label="葉っぱを発射">
-              <img class="touch-image" src="./assets/touch-leaf.svg" alt="" draggable="false" />
-            </button>
-            <button data-control="jump" class="touch-button jump image-touch" aria-label="ジャンプ">
-              <img class="touch-image" src="./assets/touch-jump.svg" alt="" draggable="false" />
-            </button>
-            <button data-control="dive" class="touch-button dive image-touch" aria-label="急降下">
-              <img class="touch-image" src="./assets/touch-dive.svg" alt="" draggable="false" />
-            </button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <script src="./game.js"></script>
-  </body>
+      <div class="scene-caption"><span>01 / THE FIRST SPROUT</span><strong>はじまりの森</strong><small>グリーンと、もう一度芽ぶく世界へ。</small></div>
+    </section>
+    <section id="map" class="screen sheet" hidden>
+      <div class="sheet-head"><div><p class="eyebrow">YOUR EXPEDITION</p><h2>冒険の地図</h2><p id="progressText"></p></div><button id="shopButton" class="primary">ショップ →</button></div>
+      <nav id="regionTabs" class="region-tabs" aria-label="世界を選ぶ"></nav>
+      <div id="mapScroll" class="map-scroll" tabindex="0" aria-label="横にスクロールする冒険の地図"><div id="stageMap" class="stage-map"></div></div>
+      <div class="map-footer"><span>左右にスクロールして、つぎの世界へ</span><span>● クリアで次のステージが開くよ</span></div>
+    </section>
+    <section id="shop" class="screen sheet" hidden>
+      <div class="sheet-head"><div><p class="eyebrow">GREEN'S WORKSHOP</p><h2>強化ショップ</h2><p>お気に入りの力を育てよう。</p></div><button data-map class="small-button">地図へ戻る →</button></div>
+      <div class="shop-scroll" tabindex="0" aria-label="上下にスクロールする商品一覧"><h3>グリーンを強くする</h3><div id="shopItems" class="shop-grid"></div><h3>先のステージへ</h3><div id="unlockItem"></div></div>
+    </section>
+    <section id="result" class="screen result-screen" hidden><div class="result-card"><p id="resultEyebrow" class="eyebrow"></p><h2 id="resultTitle"></h2><p id="resultText"></p><div id="resultReward" class="result-reward"></div><div class="result-actions"><button id="retryButton" class="primary">もう一度挑戦</button><button data-map class="primary">地図へ戻る →</button></div></div></section>
+    <section id="ending" class="screen result-screen" hidden><div class="result-card ending-card"><p class="eyebrow">FINAL BOSS DEFEATED · WORLD RESTORED</p><h2>世界に、<br>みどりが帰ってきた。</h2><p>小さな足あとが、森になった。<br>グリーンときみが、この世界を救ったんだ。</p><div class="ending-medal">WORLD SAVED</div><p>遊んでくれて、ありがとう。</p><button data-map class="primary">冒険の地図へ →</button></div></section>
+  </main>
+  <div id="playHud" class="play-hud" hidden><span id="stageLabel"></span><span id="hearts"></span><span id="leafStatus"></span></div>
+  <div id="bossHud" class="boss-hud" hidden><div><b id="bossName"></b><span id="bossTip"></span></div><progress id="bossHealth" max="1" value="1"></progress></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="rotateHint" class="rotate-hint" hidden>スマホを横にすると、広く遊べるよ。</div>
+  <div id="touchControls" class="touch-controls" hidden>
+    <div class="touch-left"><button data-control="left" aria-label="左へ移動"><img src="./assets/touch-left.svg" draggable="false" alt=""></button><button data-control="right" aria-label="右へ移動"><img src="./assets/touch-right.svg" draggable="false" alt=""></button></div>
+    <div class="touch-right"><button data-control="shoot" id="leafButton" aria-label="葉っぱを発射（1ポイント）" hidden><img src="./assets/touch-leaf.svg" draggable="false" alt=""></button><button data-control="jump" aria-label="ジャンプ"><img src="./assets/touch-jump.svg" draggable="false" alt=""></button><button data-control="dive" aria-label="急降下"><img src="./assets/touch-dive.svg" draggable="false" alt=""></button></div>
+  </div>
+  <dialog id="menu"><div class="menu-head"><h2>ひとやすみ</h2><button id="closeMenu" class="small-button" aria-label="メニューを閉じる">×</button></div><p>メニューを開いている間は、ゲームが止まるよ。</p><button id="resumeButton" class="primary">つづける</button><button id="mapFromMenu" class="small-button">地図へ戻る</button><button id="soundButton" class="small-button">音：オン</button><button id="fullscreenButton" class="small-button">全画面にする</button><hr><button id="dailyButton" class="small-button">今日のボーナス +50pt</button><button id="supportButton" class="small-button">応援ボタン +5pt</button><button id="adButton" class="small-button">広告を見る（おためし）+30pt</button><small>おためし版です。本物の広告は流れません。</small><p class="instructions">A / D：左右　W / ↑ / Space：ジャンプ<br>S / ↓：急降下　E：葉っぱ（アイテム取得後）<br>葉っぱは急降下の半分の強さ。1発1pt。</p></dialog>
+  <noscript>ゲームを遊ぶには、ブラウザの JavaScript を有効にしてください。</noscript>
+  <script src="./world.js?v=0.2.0"></script><script src="./art.js?v=0.2.0"></script><script src="./game.js?v=0.2.0"></script>
+</body>
 </html>

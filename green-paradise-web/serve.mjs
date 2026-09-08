@@ -14,6 +14,9 @@ const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
 };
 
 function filePathFromUrl(urlPath) {
@@ -38,7 +41,7 @@ const server = http.createServer((request, response) => {
 
     const extension = path.extname(filePath);
     const contentType = contentTypes[extension] || "application/octet-stream";
-    response.writeHead(200, { "Content-Type": contentType });
+    response.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-cache" });
     response.end(data);
   });
 });
