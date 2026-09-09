@@ -9,7 +9,7 @@
   catch { save = P.sanitizeSave({}); }
   let game = null, currentScreen = "title", region = 0, viewWidth = 960, displayScale = 1, offsetY = 0;
   let last = 0, accumulator = 0, visualTime = 0, toastTime = 0, writePending = false, lastSave = 0;
-  let supportReady = 0, adReady = 0, tutorialStep = -1, endingTime = 0;
+  let tutorialStep = -1, endingTime = 0;
   const keys = new Set(), pointers = new Map(), actions = { jump: false, dive: false, shoot: false };
   const sound = createSound();
   const screens = ["title", "map", "shop", "result", "ending"];
@@ -217,10 +217,6 @@
   }
   function openMenu() { clearInput(); $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }
   function closeMenu() { $("menu").close(); clearInput(); accumulator = 0; $("menuButton").setAttribute("aria-expanded", "false"); syncHud(); if (currentScreen === "shop") renderShop(); sound.resume(); }
-  async function fullScreen() {
-    try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); } catch {}
-    try { if (screen.orientation?.lock && document.fullscreenElement) await screen.orientation.lock("landscape"); } catch {}
-  }
   // Native clicks belong to menus; only the actual play controls cancel touch defaults.
   $("startButton").addEventListener("click", () => { show("map"); sound.unlock(); });
   $("mapScroll").addEventListener("scroll", () => {
@@ -239,14 +235,10 @@
     $("hintGuide").open = true; $("hintGuide").scrollIntoView({ block: "start" });
   });
   $("closeMenu").addEventListener("click", closeMenu); $("resumeButton").addEventListener("click", closeMenu);
+  $("restartButton").addEventListener("click", () => { const id = game?.stage.id; closeMenu(); if (id) startStage(id); });
   $("menu").addEventListener("cancel", e => { e.preventDefault(); closeMenu(); });
   $("mapFromMenu").addEventListener("click", () => { closeMenu(); goMap(); });
-  $("fullscreenButton").addEventListener("click", fullScreen);
   $("soundButton").addEventListener("click", () => { const muted = sound.toggle(); $("soundButton").textContent = `音：${muted ? "オフ" : "オン"}`; });
-  function day() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-  $("dailyButton").addEventListener("click", () => { if (save.lastDailyBonus === day()) { toast("今日はもう受け取ったよ。また明日！"); return; } save.lastDailyBonus = day(); points(50); writeSave(); sound.effect("purchase"); toast("今日のボーナス +50pt！"); });
-  $("supportButton").addEventListener("click", () => { if (Date.now() < supportReady) { toast("応援は10秒に1回できるよ。"); return; } supportReady = Date.now() + 10000; points(5); writeSave(); toast("応援ありがとう！ +5pt"); });
-  $("adButton").addEventListener("click", () => { if (Date.now() < adReady) { toast("次のおためしボーナスは30秒後だよ。"); return; } adReady = Date.now() + 30000; points(30); writeSave(); toast("広告のおためしボーナス +30pt（広告は流れません）"); });
   const keyMap = { a: "left", arrowleft: "left", d: "right", arrowright: "right", w: "jump", arrowup: "jump", " ": "jump", s: "dive", arrowdown: "dive", e: "shoot" };
   window.addEventListener("keydown", e => {
     if (e.key === "Escape" && currentScreen === "play" && !$("menu").open) { openMenu(); return; }
@@ -275,8 +267,7 @@
   document.addEventListener("visibilitychange", () => { clearInput(); writeSave(); if (document.hidden && currentScreen === "play" && !$("menu").open) openMenu(); });
   window.addEventListener("pagehide", writeSave); window.addEventListener("resize", resize);
   $("points").textContent = save.points; $("version").textContent = `バージョン ${P.VERSION}`;
-  $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスの装甲には威力25%。急降下で2.4秒間、弱点が開きます。"));
-  $("menu").querySelector(".instructions").append(document.createTextNode(" ボスは1回の急降下で最大3.5、葉っぱで最大1.75ダメージ。命中直後は短い無敵時間があります。体力が半分になると本気モード！"));
+  $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスは急降下で弱点が開き、体力が半分になると本気モードになります。"));
   const guide = document.createElement("details"); guide.id = "hintGuide";
   const heading = document.createElement("summary"); heading.textContent = "仕掛けのヒント（16種類）"; guide.append(heading);
   const backToPlay = document.createElement("button"); backToPlay.className = "small-button"; backToPlay.textContent = "閉じてつづける";

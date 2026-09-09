@@ -13,6 +13,9 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
     const browser = await engine.launch();
     try {
       const context = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
+      await context.addInitScript(() => {
+        if (!localStorage.getItem("greenParadiseSaveV1")) localStorage.setItem("greenParadiseSaveV1", JSON.stringify({ points: 1000 }));
+      });
       const page = await context.newPage(), errors = [], missing = [];
       page.on("pageerror", e => errors.push(e.message));
       page.on("response", r => { if (r.status() >= 400) missing.push(r.url()); });
@@ -72,10 +75,8 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       await activate("#menuButton");
       const time = await page.evaluate(() => testGame.time); await page.waitForTimeout(200);
       assert.equal(await page.evaluate(() => testGame.time), time);
-      await activate("#dailyButton");
-      const points = await page.locator("#points").textContent();
-      await activate("#dailyButton"); assert.equal(await page.locator("#points").textContent(), points);
-      await activate("#supportButton"); await activate("#adButton");
+      assert.equal(await page.locator("#dailyButton, #supportButton, #adButton, #fullscreenButton").count(), 0);
+      assert.equal(await page.locator("#restartButton").count(), 1);
       await activate("#resumeButton");
       // Collect a real drop and verify the conditional leaf control.
       await page.evaluate(() => { testGame.drops.push({ x: testGame.player.x, y: testGame.player.y, w: 26, h: 26, vy: 0 }); });
@@ -94,7 +95,7 @@ const snapshot = async (p, name) => p.screenshot({ path: `/tmp/green-${name}.png
       assert.equal(await page.locator(".stage-node:not(:disabled)").count(), 2);
       assert.equal(await page.locator(".stage-node.cleared").count(), 1);
       assert.deepEqual(errors, [], `JS errors: ${name}`); assert.deepEqual(missing, []);
-      console.log(`PASS ${name}: start, version, 50 nodes, shop scroll, input, pause, drops, clear, purchase, persistence`);
+      console.log(`PASS ${name}: start, version, 50 nodes, shop scroll, input, clean pause menu, drops, clear, purchase, persistence`);
       await context.close();
     } finally { await browser.close(); }
   }

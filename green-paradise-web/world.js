@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "0.5.0";
+  const VERSION = "0.6.0";
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
   const GRAVITY = 1500;

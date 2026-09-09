@@ -1,0 +1,11 @@
+{
+  "appId": "jp.dt9999.greenparadise",
+  "appName": "グリーンパラダイス",
+  "webDir": "../green-paradise-web",
+  "backgroundColor": "#234e40",
+  "ios": {
+    "contentInset": "never",
+    "preferredContentMode": "mobile",
+    "limitsNavigationsToAppBoundDomains": true
+  }
+}

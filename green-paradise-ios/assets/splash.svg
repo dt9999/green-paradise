@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bce9da"/>
+      <stop offset="0.55" stop-color="#eef4c9"/>
+      <stop offset="1" stop-color="#d39855"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fffbd2" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#fffbd2" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="35" stdDeviation="28" flood-color="#183b31" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="2732" height="2732" fill="url(#sky)"/>
+  <circle cx="2130" cy="610" r="430" fill="url(#sun)"/>
+  <path d="M0 2040 Q420 1840 840 2020 T1680 1970 T2732 1930 V2732 H0Z" fill="#6e563b"/>
+  <path d="M0 2160 Q360 1960 760 2140 Q1130 2300 1500 2070 Q1890 1820 2270 2070 Q2490 2210 2732 2070 V2732 H0Z" fill="#2f8a58"/>
+  <path d="M0 2320 Q430 2090 890 2300 T1790 2240 T2732 2210 V2732 H0Z" fill="#176e47"/>
+  <g transform="translate(1790 1210)" filter="url(#shadow)">
+    <rect x="-105" y="225" width="210" height="570" rx="80" fill="#8b5937"/>
+    <circle cx="0" cy="25" r="340" fill="#1f7e4d"/>
+    <circle cx="-250" cy="180" r="250" fill="#2c9d5d"/>
+    <circle cx="260" cy="170" r="270" fill="#279255"/>
+    <circle cx="0" cy="-210" r="260" fill="#37ad68"/>
+    <circle cx="-45" cy="-235" r="85" fill="#7eda82" opacity="0.7"/>
+  </g>
+  <g transform="translate(910 1530)" filter="url(#shadow)">
+    <rect x="-250" y="-300" width="500" height="470" rx="125" fill="#dbf4df" stroke="#174f40" stroke-width="38"/>
+    <rect x="-180" y="-230" width="360" height="215" rx="80" fill="#174f40"/>
+    <circle cx="-85" cy="-120" r="38" fill="#7cff8c"/>
+    <circle cx="85" cy="-120" r="38" fill="#7cff8c"/>
+    <path d="M0-310 Q40-445 150-465" fill="none" stroke="#174f40" stroke-width="34" stroke-linecap="round"/>
+    <circle cx="164" cy="-475" r="48" fill="#76dd65" stroke="#174f40" stroke-width="25"/>
+    <rect x="-200" y="150" width="400" height="350" rx="90" fill="#48b96b" stroke="#174f40" stroke-width="38"/>
+    <path d="M-110 500 L-150 720 M110 500 L150 720" stroke="#174f40" stroke-width="72" stroke-linecap="round"/>
+    <path d="M-200 230 L-390 455 M200 230 L390 455" stroke="#174f40" stroke-width="72" stroke-linecap="round"/>
+    <path d="M0 240 C-60 160-150 220-125 310 C-95 405 0 450 0 450 C0 450 95 405 125 310 C150 220 60 160 0 240Z" fill="#dff56e"/>
+  </g>
+  <g fill="#f2f8d2" stroke="#174f40" stroke-width="16" paint-order="stroke" text-anchor="middle" filter="url(#shadow)">
+    <text x="1366" y="690" font-family="Hiragino Maru Gothic ProN, sans-serif" font-size="215" font-weight="900" letter-spacing="14">グリーン</text>
+    <text x="1366" y="920" font-family="Hiragino Maru Gothic ProN, sans-serif" font-size="215" font-weight="900" letter-spacing="8">パラダイス</text>
+  </g>
+  <text x="1366" y="2500" fill="#eef8c9" text-anchor="middle" font-family="Hiragino Maru Gothic ProN, sans-serif" font-size="76" font-weight="700" letter-spacing="20">GREEN PARADISE</text>
+</svg>
