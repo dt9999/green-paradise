@@ -3,7 +3,13 @@ const path = require("node:path");
 const { webkit } = require("../../green-paradise-web/node_modules/playwright");
 
 const url = process.env.TEST_URL || "http://127.0.0.1:4174";
-const output = path.resolve(__dirname, "../app-store/screenshots/iphone-6.3-landscape");
+const isIpad = process.env.STORE_DEVICE === "ipad";
+const output = path.resolve(
+  __dirname,
+  isIpad
+    ? "../app-store/screenshots/ipad-13-landscape"
+    : "../app-store/screenshots/iphone-6.3-landscape",
+);
 
 async function shot(page, name) {
   await page.screenshot({ path: path.join(output, name), animations: "disabled" });
@@ -13,8 +19,8 @@ async function shot(page, name) {
   fs.mkdirSync(output, { recursive: true });
   const browser = await webkit.launch();
   const device = {
-    viewport: { width: 874, height: 402 },
-    deviceScaleFactor: 3,
+    viewport: isIpad ? { width: 1366, height: 1024 } : { width: 874, height: 402 },
+    deviceScaleFactor: isIpad ? 2 : 3,
     isMobile: true,
     hasTouch: true,
   };
@@ -26,7 +32,6 @@ async function shot(page, name) {
 
   const context = await browser.newContext(device);
   await context.addInitScript(() => {
-    Object.defineProperty(document.documentElement, "requestFullscreen", { value: async () => {} });
     localStorage.setItem("greenParadiseSaveV1", JSON.stringify({
       points: 2460,
       highestCleared: 49,
