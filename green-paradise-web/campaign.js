@@ -164,15 +164,7 @@
     });
     for (let n = 1; n < ground.length - 1; n++) {
       const f = ground[n];
-      // Optional upper routes reconnect to the always-reachable ground route.
-      if (n >= 4 && n < ground.length - 2 && n % 3 === 1) {
-        add("moving", f.x + 18, f.y - 72, 100);
-        add(n % 2 ? "moving" : "lift", f.x + 130, f.y - 148, 112, { range: n % 2 ? 20 : 24 });
-        add("moving", f.x + 255, f.y - 205, 125);
-        add("moving", f.x + f.w - 120, f.y - 64, ground[n + 1].x - f.x - f.w + 200);
-        stage.crystals.push({ x: f.x + 306, y: f.y - 233, w: 16, h: 20 });
-        stage.landmarks.push({ x: f.x + 140, y: f.y, type: "tower" });
-      }
+      // Gimmicks.refine authors the upper routes after these story spaces are reserved.
       if (n >= 4 && n % 5 === 2) {
         // A roof and a walkable lower passage form a genuine two-level fork.
         stage.gimmicks = stage.gimmicks.filter(a => !(a.y < f.y - 62 &&
@@ -240,13 +232,14 @@
       Object.assign(g.player, { x: 80, y: 378, vx: 0, vy: 0, grounded: true, dive: false, support: null });
       g.camera = 0;
     }
+    g.cameraY = 0;
     g.events.push({ type: "roomTravel" }); return true;
   }
   function stepRoom(g, input, dt, hooks) {
     const p = g.player; g.time += dt;
-    p.vx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 205;
+    p.vx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * (hooks.stats?.speed ?? 205);
     if (p.vx) p.facing = Math.sign(p.vx);
-    if (input.jump && p.grounded) { p.vy = -550; p.grounded = false; hooks.emit(g, "jump"); }
+    if (input.jump && p.grounded) { p.vy = -(hooks.stats?.jump ?? 550); p.grounded = false; hooks.emit(g, "jump"); }
     if (input.dive && !p.grounded) p.vy = 900;
     p.vy += 1500 * dt; p.x = Math.max(45, Math.min(850, p.x + p.vx * dt)); p.y += p.vy * dt;
     if (p.y >= 378) { p.y = 378; p.vy = 0; p.grounded = true; }
@@ -279,7 +272,7 @@
     const p = g.player, cp = g.checkpoint;
     Object.assign(p, { x: cp.x, y: cp.y - p.h, vx: 0, vy: 0, grounded: true, dive: false,
       hp: p.maxHp, invincible: 2, support: null, coyote: .1, jumpBuffer: 0 });
-    g.state = "playing"; g.hazards = []; g.shots = []; g.events = [];
+    g.state = "playing"; g.cameraY = 0; g.hazards = []; g.shots = []; g.events = [];
     g.arenaEntered = false; g.bossIntro = 0;
     for (const e of g.enemies) if (e.boss && e.alive) Object.assign(e, {
       hp: e.maxHp, x: e.baseX, y: e.baseY, cycle: 0, attack: 0, phase: 1,

@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.8";
+  const VERSION = "1.2.0";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -21,19 +21,19 @@
   const ENEMIES = {
     crawler: { w: 44, h: 28, speed: 36, hp: 2, points: 25 },
     roller: { w: 44, h: 40, speed: 70, hp: 2, points: 35 },
-    hopper: { w: 40, h: 36, speed: 28, hp: 2, points: 40 },
-    drone: { w: 46, h: 30, speed: 44, hp: 2, points: 45 },
+    hopper: { w: 40, h: 36, rise: 65, speed: 28, hp: 2, points: 40 },
+    drone: { w: 46, h: 30, rise: 77, speed: 44, hp: 2, points: 45 },
     tank: { w: 58, h: 42, speed: 24, hp: 4, points: 60 },
     stump: { name: "キリカブン", tip: "止まってから小走りする切り株ロボ。", w: 42, h: 34, speed: 65, hp: 2, points: 30 },
     burrower: { name: "スナモグラ", tip: "砂にもぐるよ。顔を出したら急降下！", w: 44, h: 32, speed: 32, hp: 2, points: 35 },
-    prism: { name: "カガミバット", tip: "8の字に飛ぶよ。低く来たところをねらおう。", w: 42, h: 32, speed: 0, hp: 2, points: 40 },
-    piston: { name: "プレスロボ", tip: "その場で上下にジャンプするよ。", w: 48, h: 46, speed: 0, hp: 3, points: 45 },
+    prism: { name: "カガミバット", tip: "8の字に飛ぶよ。低く来たところをねらおう。", w: 42, h: 32, rise: 70, speed: 0, hp: 2, points: 40 },
+    piston: { name: "プレスロボ", tip: "その場で上下にジャンプするよ。", w: 48, h: 46, rise: 86, speed: 0, hp: 3, points: 45 },
     spore: { name: "ホウシダケ", tip: "光ったあと、ゆっくり胞子を飛ばすよ。", w: 46, h: 38, speed: 0, hp: 3, points: 45 },
     skater: { name: "ツルリン", tip: "すべり出すと速い！ ブレーキ中がチャンス。", w: 42, h: 34, speed: 145, hp: 3, points: 45 },
-    swooper: { name: "カゼカラス", tip: "羽が光ったら低く飛びこんでくるよ。", w: 48, h: 30, speed: 52, hp: 3, points: 50 },
+    swooper: { name: "カゼカラス", tip: "羽が光ったら低く飛びこんでくるよ。", w: 48, h: 30, rise: 66, speed: 52, hp: 3, points: 50 },
     blink: { name: "カゲボタル", tip: "光の輪にワープするよ。現れる場所を見よう。", w: 38, h: 34, speed: 22, hp: 3, points: 50 },
     sentinel: { name: "イシノバンニン", tip: "光ったら地面の波がくる！ ジャンプでよけよう。", w: 54, h: 48, speed: 18, hp: 4, points: 60 },
-    mimic: { name: "コピーグリーン", tip: "きみのジャンプをまねするロボだよ。", w: 36, h: 52, speed: 45, hp: 4, points: 60 },
+    mimic: { name: "コピーグリーン", tip: "きみのジャンプをまねするロボだよ。", w: 36, h: 52, rise: 60, speed: 45, hp: 4, points: 60 },
   };
   const REGION_ENEMIES = ["stump", "burrower", "prism", "piston", "spore", "skater", "swooper", "blink", "sentinel", "mimic"];
   const COST_MULTIPLIERS = [1, 2, 4, 10, 22, 45, 90];
@@ -80,10 +80,10 @@
       enemies.push({ type: "boss", x: last.x + 610, platform: platforms.length - 1 });
     }
     const gimmicks = G.build(platforms, region, local, id, crystals);
-    return C.decorate({ id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals, gimmicks,
+    return G.refine(C.decorate({ id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals, gimmicks,
       name: id === 1 ? "はじめの一歩" : boss ? boss.name : `${G.INFO[G.REGIONS[region][local % G.REGIONS[region].length]][0]}${["の道", "の小径", "の冒険", "の試練"][local]}`,
       length: last.x + last.w, goalX: last.x + last.w - 120,
-      bonus: 100 + id * 12 + (boss ? 180 : 0), cost: 90 + id * 12 });
+      bonus: 100 + id * 12 + (boss ? 180 : 0), cost: 90 + id * 12 }), ENEMIES);
   }
   const STAGES = Array.from({ length: 50 }, (_, i) => makeStage(i + 1));
   const UPGRADES = [
@@ -114,7 +114,7 @@
   }
   function createGame(stage, save) {
     const upgrades = { ...save.upgrades };
-    return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
+    return { stage, upgrades, time: 0, state: "playing", camera: 0, cameraY: 0, score: 0, earned: 0, events: [],
       tutorial: stage.id === 1 && !save.tutorialComplete ? { step: 0, x: 80, walked: 0, jumped: false, dived: false, since: 0 } : null,
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
       gimmicks: G.create(stage), seenGimmicks: new Set(),
@@ -127,7 +127,7 @@
         const p = stage.platforms[e.platform], boss = e.type === "boss";
         const def = boss ? { w: stage.id === 50 ? 140 : 100, h: stage.id === 50 ? 90 : 78, hp: stage.boss.hp, speed: 36, points: 150 + stage.region * 30 } : ENEMIES[e.type];
         return { ...e, ...def, maxHp: def.hp, x: e.x, y: p.y - def.h, baseY: p.y - def.h, baseX: e.x,
-          lo: p.x + 24, hi: p.x + p.w - def.w - 24, dir: -1, alive: true, age: i * .7, hit: 0,
+          lo: e.patrolMin ?? p.x + 24, hi: e.patrolMax !== undefined ? e.patrolMax - def.w : p.x + p.w - def.w - 24, dir: -1, alive: true, age: i * .7, hit: 0,
           shield: false, boss, cycle: 0, attack: 0, warning: false, openTime: 0, recovery: 0, phase: 1,
           intangible: false, mobTime: 0, mobVy: 0, teleportX: e.x };
       }) };
@@ -305,7 +305,7 @@
   }
   function step(g, input, dt, points = 0) {
     if (g.state !== "playing") return;
-    if (g.room) { C.stepRoom(g, input, dt, { emit, particles }); return; }
+    if (g.room) { C.stepRoom(g, input, dt, { emit, particles, stats: stats(g.upgrades) }); return; }
     if (g.bossIntro > 0) { g.bossIntro = Math.max(0, g.bossIntro - dt); return; }
     const p = g.player, stage = g.stage;
     g.time += dt; g.cooldown = Math.max(0, g.cooldown - dt); g.shake = Math.max(0, g.shake - dt);

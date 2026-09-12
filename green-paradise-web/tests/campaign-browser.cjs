@@ -10,7 +10,7 @@ const url = process.env.TEST_URL || 'http://127.0.0.1:4173';
       const page = await context.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.goto(url);
-      assert.match(await page.locator('#version').textContent(), /1.1.8/);
+      assert.match(await page.locator('#version').textContent(), /1\.2\.0/);
       await page.locator('#startButton').tap(); assert.equal(await page.locator('.stage-node').count(), 50);
       await page.evaluate(() => { const create = Paradise.createGame; Paradise.createGame = (...args) => (window.testGame = create(...args)); });
       await page.locator('.stage-node').first().tap();

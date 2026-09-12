@@ -247,7 +247,7 @@
       c.beginPath(); c.moveTo(-9, 0); c.lineTo(9, 0); c.lineTo(3, -6); c.moveTo(9, 0); c.lineTo(3, 6); c.stroke(); c.restore();
     };
     if (["moving", "lift", "phase", "crumble", "bridge"].includes(kind)) {
-      if (kind === "moving" || kind === "lift") {
+      if ((kind === "moving" || kind === "lift") && a.range > 0) {
         c.strokeStyle = "#f1f4c860"; c.lineWidth = 2; c.setLineDash([3, 7]);
         c.beginPath();
         if (kind === "moving") { c.moveTo(a.baseX - a.range, y + 8); c.lineTo(a.baseX + w + a.range, y + 8); }
@@ -265,7 +265,14 @@
           for (let i = 16; i < w; i += 30) { c.beginPath(); c.moveTo(x + i, y); c.lineTo(x + i - 6, y + 8); c.lineTo(x + i + 5, y + 16); c.stroke(); }
         } else if (kind === "bridge") for (let i = 8; i < w; i += 16) leaf(c, x + i, y + 3, 13, "#c2e79a", -.5);
         else if (kind === "phase") for (let i = 12; i < w; i += 22) ellipse(c, x + i, y - 5 + Math.sin(time * 3 + i) * 3, 3, 3, "#f1f7c4");
-        else arrow(x + w / 2, y + 10, kind === "lift" ? -Math.PI / 2 : 0);
+        else if (a.range > 0) arrow(x + w / 2, y + 10, kind === "lift" ? -Math.PI / 2 : 0);
+        else {
+          for (const dx of [10, w - 10]) ellipse(c, x + dx, y + 10, 2.5, 2.5, "#e7d5a9");
+          if (a.encounter || a.routeExit) {
+            round(c, x + 6, y - 3, w - 12, 5, 2, "#bfe4a0");
+            for (let dx = 24; dx < w - 15; dx += 40) leaf(c, x + dx, y - 6, 7, "#d9efa9", -.8);
+          }
+        }
         c.globalAlpha = 1;
       }
     } else if (kind === "brittle" && a.active) {
@@ -323,6 +330,36 @@
       c.fillStyle = "#fff0b2"; c.font = "bold 23px sans-serif"; c.fillText("!", x + w / 2 - 4, y - 32);
     }
     c.restore();
+  }
+  function routeScenery(c, g, time, width) {
+    for (const route of g.stage.encounters) {
+      if (route.end < g.camera || route.x > g.camera + width) continue;
+      c.save();
+      if (route.arc) {
+        const a = route.arc;
+        c.strokeStyle = "#e6f4bc66"; c.lineWidth = 2; c.setLineDash([3, 9]);
+        c.beginPath(); c.moveTo(a.x, a.y);
+        c.quadraticCurveTo((a.x + a.toX) / 2, Math.min(a.y, a.toY) - 125, a.toX, a.toY); c.stroke(); c.setLineDash([]);
+        for (let i = 0; i < 4; i++) {
+          const t = (time * .28 + i / 4) % 1, v = 1 - t;
+          const x = v * v * a.x + 2 * v * t * (a.x + a.toX) / 2 + t * t * a.toX;
+          const y = v * v * a.y + 2 * v * t * (Math.min(a.y, a.toY) - 125) + t * t * a.toY;
+          leaf(c, x, y, 5, "#e5efb6", -1 + t * 2);
+        }
+      } else {
+        const top = route.floorY - 220, x = route.x + 28, w = Math.min(410, route.end - route.x - 90);
+        round(c, x, top, w, 220, 12, "#193a3620");
+        c.strokeStyle = "#d7e8bc30"; c.lineWidth = 3;
+        for (const dx of [10, w - 10]) { c.beginPath(); c.moveTo(x + dx, route.floorY); c.lineTo(x + dx, top + 8); c.stroke(); }
+        for (let dx = 24; dx < w - 20; dx += 48) round(c, x + dx, top + 22, 28, 47, 3, "#bce9bd12");
+      }
+      for (const id of route.goalIds) {
+        const a = g.gimmicks.find(a => a.id === id);
+        if (!a?.active) continue;
+        ellipse(c, a.x + a.w / 2, a.y + 3, Math.min(55, a.w / 2), 7, "#d6ed9d1c");
+      }
+      c.restore();
+    }
   }
   function render(c, g, time, width, ending = false) {
     if (g?.room) {
@@ -393,7 +430,8 @@
       }
       return;
     }
-    c.save(); c.translate(-camera, 0);
+    c.save(); c.translate(-camera, -(g.cameraY || 0));
+    routeScenery(c, g, time, width);
     for (const landmark of g.stage.landmarks) {
       const { x, y, type } = landmark;
       if (x < camera - 250 || x > camera + width) continue;
@@ -402,7 +440,7 @@
       for (let j = 0; j < h / 35 - 1; j++) round(c, x + 12, y - h + 15 + j * 35, 85, 18, 2, j % 2 ? "#162d3288" : "#76968d66");
       c.strokeStyle = "#9bb3a466"; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 55, y - h); c.lineTo(x + 45, y - h + 43); c.lineTo(x + 66, y - h + 58); c.stroke();
       if (type === "shelter") {
-        // A cutaway passage, not a door into another screen.
+        // The broken hatch opens a door into the room scene.
         round(c, x + 28, y - 145, 80, 62, 2, "#142e31");
         round(c, x - 8, y - 88, 144, 88, 4, "#142e31");
         round(c, x - 10, y - 88, 148, 7, 2, "#9eb594");

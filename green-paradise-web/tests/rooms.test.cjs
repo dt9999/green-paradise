@@ -24,3 +24,13 @@ test('Early upgrades stay affordable, high ranks rise sharply without changing o
   assert.deepEqual(Array.from({ length: 7 }, (_, i) => P.upgradeCost(u, i)), [180, 360, 720, 1800, 3960, 8100, 16200]);
   assert.equal(P.sanitizeSave({ upgrades: { jump: 7 } }).upgrades.jump, 7);
 });
+test('Room travel keeps upgraded movement and resets only the presentation camera', () => {
+  const g = P.createGame(P.STAGES[0], P.sanitizeSave({ upgrades: { jump: 7, speed: 7 } }));
+  const door = g.stage.rooms[0];
+  g.gimmicks.find(a => a.id === door.blockId).active = false;
+  Object.assign(g.player, { x: door.x - 18, y: door.y - 52, grounded: true });
+  g.cameraY = -100; assert.ok(C.travel(g)); assert.equal(g.cameraY, 0);
+  P.step(g, { right: true, jump: true }, 1 / 60);
+  assert.equal(g.player.vx, P.stats(g.upgrades).speed);
+  assert.equal(g.player.vy, -P.stats(g.upgrades).jump + P.GRAVITY / 60);
+});

@@ -113,6 +113,8 @@
     const section = game.stage.sections.filter(s => s.x <= game.player.x).at(-1);
     $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${section.name}`;
     $("journeyStatus").textContent = `${Math.min(100, Math.floor(game.player.x / game.stage.goalX * 100))}% · ${game.checkpoint ? "中継地点を記録済み" : "中継地点をめざそう"}`;
+    const upper = game.stage.encounters.find(r => game.player.x >= r.x && game.player.x < r.end && game.player.y + game.player.h < r.floorY - 100);
+    if (upper) $("journeyStatus").textContent = "上の道 · 下の道にも戻れるよ";
     if (game.room) { $("stageLabel").textContent = game.room.recordId ? "秘密の研究室" : "資材保管室"; $("journeyStatus").textContent = "右にお宝 · 左の扉から外へ戻れる"; }
     $("hearts").textContent = "♥".repeat(Math.max(0, game.player.hp)) + "♡".repeat(game.player.maxHp - Math.max(0, game.player.hp));
     const charges = Math.floor(game.leafCharge + 1e-9);
@@ -122,7 +124,7 @@
     if (boss && game.arenaEntered) {
       $("bossHud").hidden = false;
       $("bossName").textContent = game.stage.boss.name;
-      $("bossTip").textContent = `${boss.phase === 2 ? "本気モード" : "第1形態"} · ${boss.shield ? "バリア" : boss.recovery > 0 ? "ガード中" : boss.openTime > 0 ? "弱点オープン" : boss.warning ? "攻撃の合図！" : "急降下で攻撃"}`;
+      $("bossTip").textContent = `${boss.phase >= 3 ? "最終形態" : boss.phase === 2 ? "本気モード" : "第1形態"} · ${boss.shield ? "バリア" : boss.recovery > 0 ? "ガード中" : boss.openTime > 0 ? "弱点オープン" : boss.warning ? "攻撃の合図！" : "急降下で攻撃"}`;
       $("bossHud").dataset.phase = boss.phase;
       $("bossHealth").max = boss.maxHp; $("bossHealth").value = Math.max(0, boss.hp);
     }
@@ -288,6 +290,8 @@
       }
       const target = P.clamp(game.player.x - viewWidth * .42, 0, Math.max(0, (game.room ? 940 : game.stage.length) - viewWidth));
       game.camera += (target - game.camera) * Math.min(1, dt * 8);
+      const targetY = game.room ? 0 : P.clamp(game.player.y - 145, -170, 0);
+      game.cameraY += (targetY - game.cameraY) * Math.min(1, dt * 8);
       syncHud();
     }
     if (writePending && ms - lastSave > 1200) { writeSave(); lastSave = ms; }
@@ -299,7 +303,7 @@
     if (viewGame && activeStory) {
       // Presentation-only motion never changes collision, rewards or checkpoint state.
       const t = Math.min(1, storyTime / 1.5), p = game.player;
-      viewGame = { ...game, camera: P.clamp(p.x - viewWidth * .45, 0, Math.max(0, game.stage.length - viewWidth)),
+      viewGame = { ...game, cameraY: 0, camera: P.clamp(p.x - viewWidth * .45, 0, Math.max(0, game.stage.length - viewWidth)),
         player: { ...p, y: p.y - Math.sin(Math.min(1, storyTime / .8) * Math.PI) * 24, facing: 1, invincible: 0 } };
       ctx.save(); ctx.translate(0, -205);
       Art.render(ctx, viewGame, storyTime, viewWidth);
