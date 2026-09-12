@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.2";
+  const VERSION = "1.1.3";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -50,7 +50,7 @@
     const region = Math.floor((id - 1) / 5), local = (id - 1) % 5;
     const rng = random(id * 931 + 71), platforms = [], enemies = [], crystals = [];
     let x = 0, y = FLOOR;
-    const count = id === 50 ? 48 : 22 + region * 2 + local;
+    const count = region === 0 ? 15 + local : id === 50 ? 48 : 22 + region * 2 + local;
     for (let n = 0; n < count; n++) {
       // Every gap and rise is reachable with the starting jump, without upgrades.
       const width = n === 0 ? 620 : 380 + Math.floor(rng() * 190);

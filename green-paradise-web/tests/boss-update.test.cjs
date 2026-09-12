@@ -51,8 +51,8 @@ test("Ten boss scores differ from stage music and intensify in phase two", () =>
 });
 
 test("Early stages are longer and late-stage growth is gradual", () => {
-  assert.ok(P.STAGES[0].length >= 10000);
-  assert.ok(P.STAGES[1].platforms.length >= 22);
+  assert.ok(P.STAGES[0].length >= 7000 && P.STAGES[0].length < 10000);
+  assert.equal(P.STAGES[1].platforms.length, 16);
   assert.ok(P.STAGES[45].platforms.length > P.STAGES[5].platforms.length);
   assert.ok(P.STAGES[49].length > P.STAGES[48].length);
 });

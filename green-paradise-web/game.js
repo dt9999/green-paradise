@@ -17,7 +17,7 @@
   let selectedRecord = null, newestRecord = null, noticeTime = 0;
   const paused = () => $("menu").open || $("journal").open || $("journalWelcome").open || $("storyEvent").open;
   const storyQueue = [];
-  let activeStory = null, storyPage = 0;
+  let activeStory = null, storyPage = 0, storyTime = 0;
   function queueStory(trigger, done = () => {}) {
     const scene = C.story(game?.stage, trigger);
     if (!scene) { done(); return; }
@@ -25,7 +25,8 @@
   }
   function pumpStory() {
     if (paused() || !storyQueue.length || document.hidden) return;
-    activeStory = storyQueue.shift(); storyPage = 0; clearInput(); accumulator = 0;
+    activeStory = storyQueue.shift(); storyPage = 0; storyTime = 0; clearInput(); accumulator = 0;
+    document.body.dataset.cinematic = activeStory.scene.effect;
     renderStory(); $("storyEvent").showModal(); syncHud();
   }
   function renderStory() {
@@ -41,6 +42,8 @@
   function endStory() {
     if (!activeStory) return;
     const done = activeStory.done; activeStory = null; $("storyEvent").close();
+    delete document.body.dataset.cinematic;
+    document.querySelectorAll(".map-green").forEach(el => el.remove());
     clearInput(); accumulator = 0; done(); syncHud(); pumpStory();
   }
   $("nextStory").addEventListener("click", () => {
@@ -173,8 +176,14 @@
   function startStage(id) {
     if (id > save.unlockedStages) return;
     game = P.createGame(P.STAGES[id - 1], save); tutorialStep = -1; accumulator = 0;
-    show("play"); sound.theme("stage", game.stage.region);
-    queueStory("start");
+    region = game.stage.region; show("map");
+    const marker = document.createElement("div"); marker.className = "map-green"; marker.setAttribute("aria-label", "ステージへ歩くグリーン");
+    marker.innerHTML = '<span class="map-green-face"></span><i></i><i></i>';
+    marker.style.left = `${110 + game.stage.local * 210}px`;
+    marker.style.top = `${[215,180,235,180,230][game.stage.local] / 330 * 100}%`;
+    $("stageMap").children[region].append(marker);
+    $("mapScroll").scrollLeft = Math.max(0, region * 1120 + game.stage.local * 210 - $("mapScroll").clientWidth / 2 + 110);
+    queueStory("start", () => { show("play"); sound.theme("stage", game.stage.region); });
     toast(game.stage.boss ? `この先に ${game.stage.boss.name} がいるよ。` : `${game.stage.name} · 大きな木まで進もう。`);
   }
   function goMap() {
@@ -245,6 +254,7 @@
   function frame(ms) {
     const dt = last ? Math.min(.08, (ms - last) / 1000) : 0; last = ms; visualTime += dt;
     pumpStory();
+    if (activeStory && !document.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches) storyTime += dt;
     if (currentScreen === "ending" && !paused() && !document.hidden) {
       endingTime += dt;
       const scene = C.ENDING.filter(s => endingTime >= s.at).at(-1);
@@ -275,7 +285,18 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = "#234e40"; ctx.fillRect(0, 0, innerWidth, innerHeight);
     ctx.translate(0, offsetY); ctx.scale(displayScale, displayScale);
     if (game?.shake > 0 && currentScreen === "play" && !matchMedia("(prefers-reduced-motion: reduce)").matches) ctx.translate(Math.sin(ms * .09) * 2, Math.cos(ms * .1) * 2);
-    Art.render(ctx, currentScreen === "play" || currentScreen === "result" ? game : null, currentScreen === "ending" ? endingTime : game && currentScreen === "play" ? game.time : visualTime, viewWidth, currentScreen === "ending");
+    let viewGame = currentScreen === "play" || currentScreen === "result" ? game : null;
+    if (viewGame && activeStory) {
+      // Presentation-only motion never changes collision, rewards or checkpoint state.
+      const t = Math.min(1, storyTime / 1.5), p = game.player;
+      viewGame = { ...game, camera: P.clamp(p.x - viewWidth * .45, 0, Math.max(0, game.stage.length - viewWidth)),
+        player: { ...p, y: p.y - Math.sin(Math.min(1, storyTime / .8) * Math.PI) * 24, facing: 1, invincible: 0 } };
+      ctx.save(); ctx.translate(0, -205);
+      Art.render(ctx, viewGame, storyTime, viewWidth);
+      ctx.save(); ctx.translate(p.x + 18 - viewGame.camera, p.y + 20);
+      for (let i = 0; i < 18; i++) { const angle = i * Math.PI * 2 / 18; Art.leaf(ctx, Math.cos(angle) * (30 + t * 105), Math.sin(angle) * (25 + t * 65) - t * 60, 5 + Math.sin(storyTime * 2 + i) * 2, "#d6f6a7", angle + storyTime); }
+      ctx.restore(); ctx.restore();
+    } else Art.render(ctx, viewGame, currentScreen === "ending" ? endingTime : game && currentScreen === "play" ? game.time : visualTime, viewWidth, currentScreen === "ending");
     requestAnimationFrame(frame);
   }
   function openMenu() { if (paused()) return; clearInput(); $("replayEnding").hidden = !save.endingSeen; $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }

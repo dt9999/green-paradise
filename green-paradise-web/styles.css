@@ -1,6 +1,19 @@
 :root { --ink: #234a3d; --paper: #f4f1df; --muted: #708376; --line: #284a3d25; --leaf: #d1e79e; --shadow: 0 20px 70px #142f3026; font-family: "Avenir Next", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif; color: var(--ink); }
 #storyEvent { width: min(900px, 94vw); max-height: 88dvh; padding: 26px 32px; background: linear-gradient(115deg, #143d36f7, #285445f7); color: #f6f3dc; border: 1px solid #b8cc91; box-shadow: 0 0 0 7px #153d3540, 0 25px 90px #0d292ccc; }
 #storyEvent::backdrop { background: linear-gradient(#0b28283b 50%, #0b2828a8); }
+#storyEvent { margin: auto auto max(12px, env(safe-area-inset-bottom)); width: min(940px, 96vw); }
+body[data-cinematic] .topbar, body[data-cinematic] .play-hud, body[data-cinematic] .boss-hud, body[data-cinematic] .hint-button, body[data-cinematic] .record-notice { visibility: hidden; }
+body[data-cinematic="depart"] #map { top: 10px; bottom: 49%; padding: 12px; }
+body[data-cinematic="depart"] #map .sheet-head, body[data-cinematic="depart"] .region-tabs, body[data-cinematic="depart"] .map-footer { display: none; }
+body[data-cinematic="depart"] .map-region-label { display: none; }
+body[data-cinematic="depart"] .map-scroll, body[data-cinematic="depart"] .stage-map { min-height: 0; }
+.map-green { position: absolute; z-index: 4; width: 38px; height: 44px; margin: -74px 0 0 -19px; border-radius: 10px; background: #6db76a; border: 2px solid #24523d; box-shadow: 0 6px 12px #173e3540; pointer-events: none; }
+.map-green-face { position: absolute; inset: 4px -5px 16px; background: #244d40; border: 4px solid #c4e595; border-radius: 10px; }
+.map-green-face::after { content: ""; position: absolute; width: 5px; height: 6px; left: 7px; top: 4px; background: #f0ffca; box-shadow: 14px 0 #f0ffca; border-radius: 2px; }
+.map-green i { position: absolute; bottom: -7px; width: 12px; height: 10px; background: #234e3c; border-radius: 4px; left: 1px; }.map-green i:last-child { left: 21px; }
+@media (prefers-reduced-motion: no-preference) { .map-green { animation: map-arrive 1.5s ease-out both; }.map-green i { animation: map-step .2s alternate 8; }.map-green i:last-child { animation-delay: .1s; }@keyframes map-arrive { from { transform: translateX(-85px); }to { transform: translateX(0); } }@keyframes map-step { to { transform: translateY(-4px); } } }
+@media (max-height: 540px) { #storyEvent { padding: 9px 20px; max-height: 49dvh; }.story-top .small-button { padding: 5px 12px; }#storyEvent h2 { display: none; }#storyEvent .story-dialogue { min-height: 0; gap: 15px; }#storyEvent #storyPortrait { height: 55px; flex-basis: 58px; }#storyEvent #storyPortrait span { transform: scale(.65); }#storyEvent #storyText { font-size: 15px; line-height: 1.5; margin: 5px 0; }#storyEvent footer { padding-top: 5px; margin-top: 5px; }#storyEvent .primary { padding: 7px 16px; } }
+@media (max-width: 500px) { #storyEvent { max-height: 49dvh; }body[data-cinematic="depart"] .map-region-label { top: 10px; padding: 6px 12px; }.map-green { margin-top: -75px; } }
 #storyEvent .primary { background: #d6e8a7; color: #203f34; box-shadow: 0 4px 0 #718b58; }
 .story-top, #storyEvent footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
 .story-top > span { font-size: 10px; letter-spacing: .2em; color: #c0d5a7; }

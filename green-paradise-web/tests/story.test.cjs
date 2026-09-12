@@ -7,6 +7,8 @@ test('Part one has short start and goal scenes for every stage and ten boss scen
     assert.ok(scene.id.startsWith('part1-')); assert.equal(scene.lines.length, 2);
     assert.ok(scene.lines.every(l => l.text.length > 10 && l.text.length < 140));
     assert.ok(!scene.lines.some(l => /undefined|宇宙人|0コア|植物が凶暴化/.test(l.text)));
+    assert.ok(['depart', 'bloom', 'release'].includes(scene.effect));
+    if (s.id !== 50) assert.ok(!scene.lines.some(l => /人間だった|科学者|研究主任|声紋|被験|吸収量|計画名/.test(l.text)));
   }
   assert.equal(C.story({ part: 'part2' }, 'start'), null);
   assert.match(C.story(P.STAGES[49], 'boss').lines[1].text, /大地へ帰ろう/);

@@ -4,7 +4,7 @@ const fresh = id => P.createGame(P.STAGES[id - 1], P.sanitizeSave({}));
 test('Only part one exists, every expedition has three sections and optional paths', () => {
   assert.equal(C.PART.last, 50);
   for (const s of P.STAGES) {
-    assert.equal(s.part, 'part1'); assert.ok(s.length > 10000);
+    assert.equal(s.part, 'part1'); assert.ok(s.length > (s.region === 0 ? 7000 : 10000));
     assert.equal(s.sections.length, 3); assert.equal(s.records.length, 1);
     assert.ok(s.checkpoints.length >= 2);
     assert.ok(s.gimmicks.some(a => a.id.startsWith('expedition-') && a.kind === 'moving'));
