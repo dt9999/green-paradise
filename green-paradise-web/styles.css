@@ -142,6 +142,10 @@ body[data-screen="play"] .wordmark { visibility: hidden; }
 @media (max-height: 540px) and (orientation: landscape) { .hint-button { top: max(10px, env(safe-area-inset-top)); }.tutorial-hint { top: 68px; right: 20px; font-size: 10px; }.boss-intro { padding: 18px; gap: 7px; } }
 @media (max-width: 700px) and (orientation: portrait) { .hint-button { top: max(12px, env(safe-area-inset-top)); padding: 12px; }.tutorial-hint { top: 145px; max-width: 85vw; } }
 /* Chapter scenes and journal remain usable on small landscape screens. */
+.tutorial-hint { display: grid; gap: 6px; width: min(370px, 43vw); padding: 12px 15px; background: #183f35ed; color: #f1f4d9; border: 1px solid #b5cf93; border-radius: 14px; box-shadow: 0 5px 16px #12342733; }
+.tutorial-hint strong { color: #cee59c; font-size: 11px; }.tutorial-hint span { font-size: 13px; line-height: 1.65; }.tutorial-hint small { font-size: 10px; color: #c3d5ac; border-top: 1px solid #94b98655; padding-top: 5px; }
+@media (max-width: 700px) and (orientation: portrait) { .tutorial-hint { top: 190px; right: 16px; width: calc(100vw - 32px); max-width: none; } }
+@media (max-height: 540px) and (orientation: landscape) { .tutorial-hint { padding: 8px 12px; gap: 3px; }.tutorial-hint span { font-size: 12px; line-height: 1.5; } }
 #endingText { white-space: pre-line; }
 #ending[data-scene="mystery"] .ending-card { background: #15392fe8; color: #ecf6dc; }
 #ending .ending-card { transition: background 2s, color 2s; max-height: 84dvh; overflow-y: auto; }

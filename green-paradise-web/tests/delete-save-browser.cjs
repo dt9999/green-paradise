@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
         localStorage.setItem('unrelated-test-data', 'keep');
       });
       await page.goto(process.env.TEST_URL || 'http://127.0.0.1:4173'); await page.locator('#startButton').tap();
-      await page.locator('.stage-node').first().tap(); await page.locator('#skipStory').tap();
+      await page.locator('.stage-node').first().tap();
       await page.locator('#menuButton').tap(); await page.locator('#deleteSaveButton').tap();
       const originalPoints = await page.locator('#points').textContent();
       assert.ok(Number(originalPoints) >= 2345);
@@ -35,7 +35,7 @@ const { chromium } = require('playwright');
       assert.ok(Object.values(save.upgrades).every(n => n === 0));
       assert.equal(save.journalGuideSeen, false);
       assert.equal(await page.evaluate(() => localStorage.getItem('unrelated-test-data')), 'keep');
-      await page.locator('#startButton').tap(); assert.equal(await page.locator('.stage-node:not(:disabled)').count(), 1);
+      await page.locator('#startButton').tap(); assert.equal(await page.evaluate(() => document.body.dataset.screen), 'play');
       assert.deepEqual(errors, []); await page.close();
       console.log(`PASS ${viewport.width}: cancel, failure, deletion, reload, fresh start, unrelated data preserved`);
     }

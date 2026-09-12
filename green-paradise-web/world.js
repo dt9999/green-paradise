@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.7";
+  const VERSION = "1.1.8";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -102,6 +102,8 @@
       : Array.from({ length: highestCleared }, (_, i) => i + 1);
     return { points: num(raw.points, 9999999), highestCleared, clearedStages,
       schemaVersion: 2, activePart: C.PART.id,
+      adventureStarted: raw.adventureStarted === true || highestCleared > 0 || num(raw.unlockedStages, 50) > 1 || num(raw.points, 9999999) > 0 || (Array.isArray(raw.records) && raw.records.length > 0),
+      tutorialComplete: raw.tutorialComplete === true || clearedStages.includes(1),
       records: [...new Set((Array.isArray(raw.records) ? raw.records : []).filter(id => typeof id === "string" && C.validRecord(id)))],
       readRecords: [...new Set((Array.isArray(raw.readRecords) ? raw.readRecords : []).filter(id => C.validRecord(id) && Array.isArray(raw.records) && raw.records.includes(id)))],
       journalGuideSeen: raw.journalGuideSeen === true,
@@ -113,6 +115,7 @@
   function createGame(stage, save) {
     const upgrades = { ...save.upgrades };
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
+      tutorial: stage.id === 1 && !save.tutorialComplete ? { step: 0, x: 80, walked: 0, jumped: false, dived: false, since: 0 } : null,
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
       gimmicks: G.create(stage), seenGimmicks: new Set(),
       collectedRecords: new Set(save.records), checkpoint: null, supplyTaken: false, room: null, roomRewards: new Set(),

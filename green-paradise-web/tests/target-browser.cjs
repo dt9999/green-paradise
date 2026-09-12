@@ -7,7 +7,7 @@ const { chromium } = require('playwright');
     const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(process.env.TEST_URL || 'http://127.0.0.1:4173');
     await page.evaluate(() => { const create = Paradise.createGame; Paradise.createGame = (...a) => (window.g = create(...a)); });
-    await page.locator('#startButton').click(); await page.locator('.stage-node').first().click(); await page.locator('#skipStory').click();
+    await page.locator('#startButton').click();
     await page.evaluate(() => {
       const t = g.targets[0]; g.enemies = []; g.leaf = true;
       Object.assign(g.player, { x: t.x - 55, y: t.y - 25, facing: 1, invincible: 99 });

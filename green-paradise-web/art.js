@@ -425,7 +425,7 @@
     }
     for (const a of g.gimmicks) if (a.x + a.w > camera - 80 && a.x < camera + width + 80) gimmick(c, a, time);
     for (const l of g.stage.landmarks) {
-      if (l.type !== "shelter" || l.x < camera - 180 || l.x > camera + width) continue;
+      if (l.type !== "shelter" || g.stage.id !== 1 || l.entranceBlock !== g.stage.rooms[0]?.blockId || l.x < camera - 180 || l.x > camera + width) continue;
       const blocked = g.gimmicks.some(a => a.id === l.entranceBlock && a.active);
       c.save(); c.font = "bold 12px sans-serif"; c.textAlign = "center";
       round(c, l.x - 115, l.y - 44, 113, 27, 5, "#183e35ef");
@@ -433,7 +433,7 @@
       if (blocked) {
         round(c, l.x + 3, l.y - 112, 147, 25, 5, "#fff0c8");
         c.fillStyle = "#684d2d"; c.fillText("↓ 急降下でこわす", l.x + 76, l.y - 95);
-      } else { c.fillStyle = "#d9f7a4"; c.fillText("扉の前で 入る / F", l.x + 63, l.y - 34); }
+      } else { c.fillStyle = "#d9f7a4"; c.fillText("扉の前で「部屋に入る」", l.x + 63, l.y - 34); }
       c.restore();
     }
     for (const cp of g.stage.checkpoints) {

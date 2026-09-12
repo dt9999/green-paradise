@@ -92,11 +92,18 @@
   function syncHud() {
     const playing = currentScreen === "play" && game?.state === "playing";
     $("roomButton").hidden = !playing || paused() || !C.doorway(game);
-    if (playing) $("roomButton").textContent = game.room ? "外へ戻る · F" : "部屋に入る · F";
+    if (playing) $("roomButton").textContent = game.room ? "外へ戻る" : "部屋に入る";
     $("playHud").hidden = !playing;
     $("touchControls").hidden = !playing || paused();
     $("hintButton").hidden = !playing;
     $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || !!game?.room || paused();
+    const lesson = game?.tutorial;
+    $("tutorialHint").hidden ||= !lesson || (lesson.step === 4 && game.time - lesson.since > 7);
+    if (lesson) {
+      $("tutorialSpeech").textContent = C.TUTORIAL[lesson.step][0];
+      $("tutorialControl").textContent = C.TUTORIAL[lesson.step][1];
+    }
+    if (!$("tutorialHint").hidden) $("hintButton").hidden = true;
     $("bossIntro").hidden = !playing || !(game?.bossIntro > 0) || paused();
     if (playing && game.bossIntro > 0) $("bossIntroName").textContent = game.stage.boss.name;
     $("leafButton").hidden = !playing || !game.leaf || !!game.room;
@@ -179,6 +186,8 @@
   function startStage(id) {
     if (id > save.unlockedStages) return;
     game = P.createGame(P.STAGES[id - 1], save); tutorialStep = -1; accumulator = 0;
+    save.adventureStarted = true; writeSave();
+    if (id === 1) { show("play"); sound.theme("stage", 0); return; }
     region = game.stage.region; show("map");
     const marker = document.createElement("div"); marker.className = "map-green"; marker.setAttribute("aria-label", "ステージへ歩くグリーン");
     marker.innerHTML = '<span class="map-green-face"></span><i></i><i></i>';
@@ -214,6 +223,8 @@
   }
   function handleEvents() {
     const events = game.events.splice(0);
+    C.updateTutorial(game, events);
+    if (game.tutorial?.step === 4 && !save.tutorialComplete) { save.tutorialComplete = true; writePending = true; }
     for (const e of events) {
       if (e.type === "points") points(e.amount);
       else if (e.type === "won") queueStory(game.stage.id === 50 ? "boss" : "goal", () => finish(true));
@@ -278,11 +289,6 @@
       const target = P.clamp(game.player.x - viewWidth * .42, 0, Math.max(0, (game.room ? 940 : game.stage.length) - viewWidth));
       game.camera += (target - game.camera) * Math.min(1, dt * 8);
       syncHud();
-      if (game.stage.id === 1) {
-        const index = game.player.x < 330 ? 0 : game.player.x < 700 ? 1 : game.player.x < 1150 ? 2 : 3;
-        if (index > tutorialStep) { tutorialStep = index; $("tutorialHint").textContent = ["左右ボタン / A・D で移動", "上ボタン / W でジャンプ", "空中で下ボタン / S → 急降下", "敵の上から急降下！"][index]; }
-        if (game.player.x > 1700) $("tutorialHint").hidden = true;
-      }
     }
     if (writePending && ms - lastSave > 1200) { writeSave(); lastSave = ms; }
     const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -346,7 +352,7 @@
   $("dismissRecord").addEventListener("click", () => { $("recordNotice").hidden = true; noticeTime = 0; });
   function closeMenu() { $("menu").close(); clearInput(); accumulator = 0; $("menuButton").setAttribute("aria-expanded", "false"); syncHud(); if (currentScreen === "shop") renderShop(); sound.resume(); }
   // Native clicks belong to menus; only the actual play controls cancel touch defaults.
-  $("startButton").addEventListener("click", () => { show("map"); sound.unlock(); });
+  $("startButton").addEventListener("click", () => { sound.unlock(); if (save.adventureStarted) show("map"); else startStage(1); });
   $("mapScroll").addEventListener("scroll", () => {
     if (currentScreen !== "map") return;
     region = P.clamp(Math.floor(($("mapScroll").scrollLeft + $("mapScroll").clientWidth / 2) / 1120), 0, 9);

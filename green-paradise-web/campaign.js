@@ -121,6 +121,27 @@
     return { id: `${PART.id}-${stage.id}-${trigger}`, title: stage.id === 1 ? "ここは、どこ？" : STORY_AREAS[stage.region][0], stage: stage.id, trigger, effect: trigger === "start" ? "depart" : trigger === "goal" ? "bloom" : "release", lines };
   }
   function validRecord(id) { return /^part1-(?:[1-9]|[1-4][0-9]|50)-0$/.test(id); }
+  const TUTORIAL = [
+    ["ここはどこ？ まず、足を動かしてみよう。", "左右ボタン / A・D で歩く"],
+    ["なるほど、こうやって動くのか！ 足あとに草も生えてる。次は、とべるかな？", "ジャンプボタン / W・↑・スペース"],
+    ["とべた！ 空中から、思いきり下に降りてみよう。", "ジャンプ中に急降下ボタン / S・↓"],
+    ["急降下できた！ 敵にも上からこれを使おう。ふつうに乗ると危ないんだね。", "敵の真上から急降下して倒す"],
+    ["できた！ これなら先へ進める。あの大きな木まで、緑を戻していこう！", "操作の練習、おわり！"],
+  ];
+  function updateTutorial(g, events) {
+    const t = g.tutorial;
+    if (!t || g.room || g.stage.id !== 1) return;
+    const delta = Math.abs(g.player.x - t.x); t.x = g.player.x;
+    if (delta < 50) t.walked += delta;
+    if (t.step === 0 && t.walked >= 100) { t.step = 1; t.since = g.time; }
+    else if (t.step === 1) {
+      if (events.some(e => e.type === "jump")) t.jumped = true;
+      if (t.jumped && events.some(e => e.type === "land")) { t.step = 2; t.since = g.time; }
+    } else if (t.step === 2) {
+      if (events.some(e => e.type === "dive")) t.dived = true;
+      if (t.dived && (events.some(e => e.type === "land") || events.some(e => e.type === "defeat"))) { t.step = events.some(e => e.type === "defeat") ? 4 : 3; t.since = g.time; }
+    } else if (t.step === 3 && events.some(e => e.type === "defeat")) { t.step = 4; t.since = g.time; }
+  }
   function record(id) {
     if (!validRecord(id)) return null;
     const [, stage] = id.split("-");
@@ -273,7 +294,7 @@
     { at: 20, title: "遠く離れた研究施設。", text: "科学者が、植物の成長を示す画面を見つめる。\n数値が跳ね上がる。彼は何も言わず、立ち上がった。" },
     { at: 27, title: "第1部 おわり", text: "緑は帰ってきた。けれど、すべての答えはまだ見つかっていない。\nグリーンの旅は、この先へつづく。" },
   ];
-  const api = { PART, ARCHIVES, SECTION_NAMES, validRecord, record, decorate, update, retry, ENDING, story, doorway, travel, stepRoom };
+  const api = { PART, ARCHIVES, SECTION_NAMES, validRecord, record, decorate, update, retry, ENDING, story, doorway, travel, stepRoom, TUTORIAL, updateTutorial };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ParadiseCampaign = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
