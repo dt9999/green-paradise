@@ -10,7 +10,7 @@
   <title>グリーンパラダイス | 第1部：失われた緑</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=1.1.3">
+  <link rel="stylesheet" href="./styles.css?v=1.1.4">
 </head>
 <body data-screen="title">
   <canvas id="gameCanvas" aria-label="グリーンの冒険の風景"></canvas>
@@ -26,7 +26,7 @@
         <h1>グリーン<br><span>パラダイス</span></h1>
         <p class="lead">その小さな一歩が、<br>世界をみどりに変えていく。</p>
         <div class="title-facts"><span>10 の世界</span><span>50 の冒険</span><span>10 体のボス</span></div>
-        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 1.1.3</small></div>
+        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 1.1.4</small></div>
         <p class="title-hint">A・D 移動 ／ W ジャンプ ／ S 急降下<br>スマホは画面のボタンで遊べます</p>
       </div>
       <div class="scene-caption"><span>01 / THE FIRST SPROUT</span><strong>はじまりの森</strong><small>グリーンと、もう一度芽ぶく世界へ。</small></div>
@@ -60,7 +60,8 @@
   </div>
   <dialog id="menu"><div class="menu-head"><h2>ひとやすみ</h2><button id="closeMenu" class="small-button" aria-label="メニューを閉じる">×</button></div><p>メニューを開いている間は、ゲームが止まるよ。</p><button id="resumeButton" class="primary">つづける</button><button id="restartButton" class="small-button">ステージをやり直す</button><button id="mapFromMenu" class="small-button">冒険の地図へ戻る</button><button id="soundButton" class="small-button">音：オン</button><details><summary>遊び方</summary><p class="instructions">A / D：左右　W / ↑ / Space：ジャンプ<br>S / ↓：急降下　E：葉っぱ（アイテム取得後）<br>スマホは画面のボタンで操作します。葉っぱは1発1pt。</p></details><details><summary>このゲームについて</summary><p>グリーンパラダイス<br>つくった人：グリーンパラダイスチーム</p><p>記録はこの端末の中だけに保存されます。名前・位置情報・連絡先などは集めません。</p><p class="menu-note">プライバシーポリシーは公式サイトにあります。</p></details></dialog>
   <noscript>ゲームを遊ぶには、ブラウザの JavaScript を有効にしてください。</noscript>
+  <dialog id="deleteSaveDialog" aria-labelledby="deleteSaveTitle" aria-describedby="deleteSaveDescription"><h2 id="deleteSaveTitle">セーブデータを削除する？</h2><p id="deleteSaveDescription">この端末のポイント・強化レベル・ステージの解放とクリア記録・研究ノートがすべて消えて、最初からになります。<strong>削除すると元に戻せません。</strong></p><p>ほかの端末のデータは消えません。</p><p id="deleteSaveError" role="alert" hidden></p><button id="cancelDeleteSave" class="primary" autofocus>やめる（消さない）</button><button id="confirmDeleteSave" class="small-button danger-button">すべて削除して最初から</button></dialog>
   <dialog id="storyEvent" aria-labelledby="storyTitle" aria-describedby="storyText"><div class="story-top"><span id="storyChapter"></span><button id="skipStory" class="small-button">スキップ</button></div><h2 id="storyTitle"></h2><div class="story-dialogue"><div id="storyPortrait" aria-hidden="true"><span></span></div><div class="story-copy"><strong id="storySpeaker"></strong><p id="storyText" aria-live="polite"></p></div></div><footer><span id="storyPage"></span><button id="nextStory" class="primary">次へ →</button></footer></dialog>
-  <script src="./gimmicks.js?v=1.1.3"></script><script src="./campaign.js?v=1.1.3"></script><script src="./world.js?v=1.1.3"></script><script src="./music.js?v=1.1.3"></script><script src="./art.js?v=1.1.3"></script><script src="./game.js?v=1.1.3"></script>
+  <script src="./gimmicks.js?v=1.1.4"></script><script src="./campaign.js?v=1.1.4"></script><script src="./world.js?v=1.1.4"></script><script src="./music.js?v=1.1.4"></script><script src="./art.js?v=1.1.4"></script><script src="./game.js?v=1.1.4"></script>
 </body>
 </html>

@@ -406,6 +406,30 @@
     const line = document.createElement("p"); line.textContent = `${name}：${hint}`; guide.append(line);
   }
   $("menu").append(guide);
+  const deleteSaveButton = document.createElement("button");
+  deleteSaveButton.id = "deleteSaveButton"; deleteSaveButton.className = "small-button danger-button";
+  deleteSaveButton.textContent = "セーブデータを削除";
+  $("menu").append(deleteSaveButton);
+  deleteSaveButton.addEventListener("click", () => {
+    $("deleteSaveError").hidden = true; $("deleteSaveDialog").showModal();
+  });
+  $("cancelDeleteSave").addEventListener("click", () => $("deleteSaveDialog").close());
+  $("deleteSaveDialog").addEventListener("cancel", e => { e.preventDefault(); $("deleteSaveDialog").close(); });
+  $("confirmDeleteSave").addEventListener("click", () => {
+    if (!$("deleteSaveDialog").open) return;
+    try { localStorage.removeItem(STORAGE); }
+    catch {
+      $("deleteSaveError").textContent = "削除できませんでした。データは変更していません。ブラウザの保存設定を確認してください。";
+      $("deleteSaveError").hidden = false; return;
+    }
+    // Clear memory too, so the autosave/pagehide handlers cannot restore the old save.
+    save = P.sanitizeSave({}); writePending = false; game = null; region = 0;
+    storyQueue.length = 0; activeStory = null; hintHistory.length = 0;
+    selectedRecord = null; newestRecord = null; tutorialStep = -1; endingTime = 0;
+    $("deleteSaveDialog").close(); closeMenu();
+    $("points").textContent = save.points; updateJournalBadge(); show("title");
+    $("startButton").focus(); toast("セーブデータを削除しました。新しい冒険をはじめよう！");
+  });
   updateJournalBadge(); resize(); show("title"); requestAnimationFrame(frame);
 
   function createSound() {

@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.3";
+  const VERSION = "1.1.4";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
