@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  const P = window.Paradise, Art = window.ParadiseArt;
+  const P = window.Paradise, Art = window.ParadiseArt, C = window.ParadiseCampaign;
   const $ = id => document.getElementById(id);
   const canvas = $("gameCanvas"), ctx = canvas.getContext("2d");
   const STORAGE = "greenParadiseSaveV1";
@@ -14,6 +14,15 @@
   const sound = createSound();
   const screens = ["title", "map", "shop", "result", "ending"];
   const hintHistory = [];
+  const journalGuide = document.createElement("details"); journalGuide.id = "journalGuide";
+  journalGuide.innerHTML = '<summary id="journalCount">研究ノート</summary><div id="researchNotes"></div>';
+  const returnFromNotes = document.createElement("button"); returnFromNotes.className = "small-button";
+  returnFromNotes.textContent = "閉じてつづける"; returnFromNotes.addEventListener("click", closeMenu);
+  journalGuide.insertBefore(returnFromNotes, journalGuide.lastElementChild);
+  $("menu").append(journalGuide);
+  const replayEnding = document.createElement("button"); replayEnding.id = "replayEnding";
+  replayEnding.className = "small-button"; replayEnding.textContent = "第1部のエピローグを見る";
+  $("menu").append(replayEnding);
 
   function writeSave() {
     try { localStorage.setItem(STORAGE, JSON.stringify(save)); writePending = false; }
@@ -59,7 +68,9 @@
     $("rotateHint").hidden = true;
     $("bossHud").hidden = true;
     if (!playing) return;
-    $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${game.stage.biome.name}`;
+    const section = game.stage.sections.filter(s => s.x <= game.player.x).at(-1);
+    $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${section.name}`;
+    $("journeyStatus").textContent = `${Math.min(100, Math.floor(game.player.x / game.stage.goalX * 100))}% · ${game.checkpoint ? "中継地点を記録済み" : "中継地点をめざそう"}`;
     $("hearts").textContent = "♥".repeat(Math.max(0, game.player.hp)) + "♡".repeat(game.player.maxHp - Math.max(0, game.player.hp));
     const charges = Math.floor(game.leafCharge + 1e-9);
     $("leafStatus").textContent = game.leaf ? `葉っぱ ${"●".repeat(charges)}${"○".repeat(3 - charges)} · 1pt` : "";
@@ -153,7 +164,8 @@
       $("resultReward").textContent = `+ ${bonus} pt`; $("retryButton").hidden = true;
     } else {
       $("resultEyebrow").textContent = "EVERY STEP IS A NEW BEGINNING"; $("resultTitle").textContent = "もう一度、やってみよう。";
-      $("resultText").textContent = reason; $("resultReward").textContent = "集めたポイントはなくならないよ。"; $("retryButton").hidden = false;
+      $("resultText").textContent = reason; $("resultReward").textContent = "集めたポイントと研究記録はなくならないよ。"; $("retryButton").hidden = false;
+      $("retryButton").textContent = game.checkpoint ? "中継地点から再開" : "もう一度挑戦";
     }
     show("result"); sound.theme(win ? "clear" : "lost");
   }
@@ -163,6 +175,12 @@
       if (e.type === "points") points(e.amount);
       else if (e.type === "won") finish(true);
       else if (e.type === "lost") finish(false, e.reason);
+      else if (e.type === "record") {
+        if (!save.records.includes(e.record.id)) save.records.push(e.record.id);
+        writePending = true;
+        $("hintButton").textContent = "研究記録を発見 · 読む";
+        hintHistory.unshift(`研究記録：${e.record.title}（メニューの研究ノートで読めます）`);
+      }
       else {
         sound.effect(e.type);
         if (e.type === "drop") toast("葉っぱアイテムが出た！ 拾うとこのステージで発射できるよ。");
@@ -172,6 +190,7 @@
         if (e.type === "armored") toast("装甲には葉っぱが効きにくい！ 急降下で弱点を開こう。");
         if (e.type === "boss") { toast(e.text); sound.theme("boss", game.stage.region); }
         if (e.type === "bossPhase") sound.theme("boss", game.stage.region, 2);
+        if (e.type === "bossFinalPhase") { sound.theme("boss", game.stage.region, 2); toast("吸収炉が暴走！ 光る地面から離れよう。"); }
         if (e.type === "bossDefeat") { toast("ボスをたおした！ 大きな木へ進もう。"); sound.theme("clear"); }
         if (e.type === "blocked") toast("バリアが消えるのを待って攻撃しよう！");
       }
@@ -190,7 +209,14 @@
   }
   function frame(ms) {
     const dt = last ? Math.min(.08, (ms - last) / 1000) : 0; last = ms; visualTime += dt;
-    if (currentScreen === "ending") endingTime += dt;
+    if (currentScreen === "ending" && !$("menu").open && !document.hidden) {
+      endingTime += dt;
+      const scene = C.ENDING.filter(s => endingTime >= s.at).at(-1);
+      $("endingTitle").textContent = scene.title; $("endingText").textContent = scene.text;
+      $("endingMedal").textContent = endingTime < 13 ? "PART I · GREEN RETURNS" : "PART I · TO BE CONTINUED";
+      $("ending").dataset.scene = endingTime < 13 ? "restored" : "mystery";
+      $("endingMap").hidden = endingTime < 27;
+    }
     if (toastTime > 0) { toastTime -= dt; if (toastTime <= 0) $("toast").hidden = true; }
     if (currentScreen === "play" && game && !$("menu").open && !document.hidden) {
       accumulator += dt;
@@ -215,7 +241,18 @@
     Art.render(ctx, currentScreen === "play" || currentScreen === "result" ? game : null, currentScreen === "ending" ? endingTime : game && currentScreen === "play" ? game.time : visualTime, viewWidth, currentScreen === "ending");
     requestAnimationFrame(frame);
   }
-  function openMenu() { clearInput(); $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }
+  function openMenu() { clearInput(); renderJournal(); $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }
+  function renderJournal() {
+    $("replayEnding").hidden = !save.endingSeen;
+    const journal = $("researchNotes"); journal.replaceChildren();
+    $("journalCount").textContent = `研究ノート (${save.records.length}/50)`;
+    if (!save.records.length) journal.textContent = "ステージの壊れた端末や青い記録に触れると集まります。読む間はゲームが止まります。";
+    for (const id of [...save.records].reverse()) {
+      const r = C.record(id), entry = document.createElement("details"), title = document.createElement("summary"), body = document.createElement("p");
+      title.textContent = `ステージ${r.stage} · ${r.title}`; body.textContent = r.text;
+      entry.append(title, body); journal.append(entry);
+    }
+  }
   function closeMenu() { $("menu").close(); clearInput(); accumulator = 0; $("menuButton").setAttribute("aria-expanded", "false"); syncHud(); if (currentScreen === "shop") renderShop(); sound.resume(); }
   // Native clicks belong to menus; only the actual play controls cancel touch defaults.
   $("startButton").addEventListener("click", () => { show("map"); sound.unlock(); });
@@ -226,13 +263,21 @@
   }, { passive: true });
   $("shopButton").addEventListener("click", () => show("shop"));
   document.querySelectorAll("[data-map]").forEach(b => b.addEventListener("click", goMap));
-  $("retryButton").addEventListener("click", () => startStage(game.stage.id));
+  $("retryButton").addEventListener("click", () => {
+    if (C.retry(game)) { accumulator = 0; show("play"); sound.theme("stage", game.stage.region); }
+    else startStage(game.stage.id);
+  });
+  $("replayEnding").addEventListener("click", () => { if (save.endingSeen) { closeMenu(); show("ending"); sound.theme("ending"); } });
   $("menuButton").addEventListener("click", openMenu);
   $("hintButton").addEventListener("click", () => {
+    const reading = $("hintButton").textContent.startsWith("研究記録");
     openMenu();
+    $("journalGuide").open = reading;
+    $("hintButton").textContent = "？ ヒント・記録";
     const log = $("recentHints"); log.replaceChildren();
     for (const text of hintHistory) { const p = document.createElement("p"); p.textContent = text; log.append(p); }
-    $("hintGuide").open = true; $("hintGuide").scrollIntoView({ block: "start" });
+    $("hintGuide").open = !reading;
+    $(reading ? "journalGuide" : "hintGuide").scrollIntoView({ block: "start" });
   });
   $("closeMenu").addEventListener("click", closeMenu); $("resumeButton").addEventListener("click", closeMenu);
   $("restartButton").addEventListener("click", () => { const id = game?.stage.id; closeMenu(); if (id) startStage(id); });

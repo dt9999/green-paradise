@@ -43,7 +43,7 @@
     }
     c.restore();
   }
-  function scenery(c, b, width, time, camera) {
+  function scenery(c, b, width, time, camera, barren = false) {
     const gradient = c.createLinearGradient(0, 0, 0, 540);
     gradient.addColorStop(0, b.sky); gradient.addColorStop(1, b.light);
     c.fillStyle = gradient; c.fillRect(0, 0, width, 540);
@@ -70,7 +70,12 @@
     c.globalAlpha = .6;
     for (let i = -1; i < width / 210 + 2; i++) {
       const x = i * 210 - (camera * .32 % 210), y = 370 + Math.sin(i * 3) * 20;
-      if (["forest", "night", "ancient"].includes(b.decor)) tree(c, x, y, .55 + (i % 2) * .12, b.near, time * .4);
+      if (barren && ["forest", "night", "ancient", "mushroom"].includes(b.decor)) {
+        c.strokeStyle = "#666b62"; c.lineWidth = 7; c.beginPath(); c.moveTo(x, y);
+        c.lineTo(x + 8, y - 108); c.moveTo(x + 4, y - 46); c.lineTo(x - 25, y - 78);
+        c.moveTo(x + 7, y - 76); c.lineTo(x + 32, y - 104); c.stroke();
+      }
+      else if (["forest", "night", "ancient"].includes(b.decor)) tree(c, x, y, .55 + (i % 2) * .12, b.near, time * .4);
       else if (b.decor === "mushroom") {
         round(c, x - 5, y - 75, 14, 78, 4, b.far); ellipse(c, x, y - 73, 50, 23, b.near);
         for (let j = -1; j <= 1; j++) ellipse(c, x + j * 22, y - 80, 4, 3, b.accent);
@@ -321,7 +326,11 @@
   }
   function render(c, g, time, width, ending = false) {
     const b = g ? g.stage.biome : P.BIOMES[0], camera = g ? g.camera : time * 6;
-    scenery(c, b, width, time, camera);
+    scenery(c, b, width, time, camera, !!g || ending && time < 5);
+    if (g) {
+      const section = g.stage.sections.filter(s => s.x <= g.player.x).at(-1).index;
+      c.fillStyle = ["#d7c8960c", "#0e293a30", "#15252c48"][section]; c.fillRect(0, 0, width, 540);
+    }
     if (!g) {
       const x = width * .72;
       round(c, 0, 440, width, 110, 0, "#567454");
@@ -341,9 +350,33 @@
       tree(c, x, 442, 1.45, ending ? "#78b873" : "#55946c", time);
       robot(c, { x: x - 142, y: 392, facing: 1 }, time, 1.35);
       for (let i = 0; i < 60; i++) leaf(c, i * width / 60, 443 + i % 3 * 7, 9, i % 2 ? "#a7cd7a" : "#75b56a", -1);
+      if (ending && time >= 13) {
+        const growth = P.clamp((time - 13) / 5, 0, 1);
+        c.strokeStyle = "#183f38"; c.lineWidth = 16; c.beginPath(); c.moveTo(width * .88, 445);
+        c.bezierCurveTo(width * .9 - Math.sin(time) * 28, 390 - growth * 190, width * .7, 460 - growth * 280, width * .81, 440 - growth * 330); c.stroke();
+        leaf(c, width * .81, 440 - growth * 330, 20 + growth * 18, "#85bb70", Math.sin(time) * .3);
+      }
+      if (ending && time >= 20) {
+        const sx = width * .77;
+        round(c, sx - 40, 268, 150, 200, 8, "#122d30ee");
+        round(c, sx - 18, 285, 100, 63, 4, "#8cdbb9");
+        c.strokeStyle = "#224b40"; c.lineWidth = 3; c.beginPath(); c.moveTo(sx - 10, 337); c.lineTo(sx + 12, 330); c.lineTo(sx + 35, 319); c.lineTo(sx + 55, 290); c.stroke();
+        const stand = P.clamp((time - 21) / 2, 0, 1) * 28;
+        ellipse(c, sx + 55, 392 - stand, 15, 18, "#203333");
+        round(c, sx + 32, 405 - stand, 48, 60 + stand, 7, "#bbc8ba");
+      }
       return;
     }
     c.save(); c.translate(-camera, 0);
+    for (const landmark of g.stage.landmarks) {
+      const { x, y, type } = landmark;
+      if (x < camera - 250 || x > camera + width) continue;
+      const h = type === "tower" ? 250 : 140;
+      round(c, x, y - h, 118, h, 2, "#33484588");
+      for (let j = 0; j < h / 35 - 1; j++) round(c, x + 12, y - h + 15 + j * 35, 85, 18, 2, j % 2 ? "#162d3288" : "#76968d66");
+      c.strokeStyle = "#9bb3a466"; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 55, y - h); c.lineTo(x + 45, y - h + 43); c.lineTo(x + 66, y - h + 58); c.stroke();
+      if (type === "shelter") { round(c, x + 38, y - 58, 44, 58, 2, "#162f32"); }
+    }
     for (const f of g.stage.platforms) {
       if (f.x + f.w < camera || f.x > camera + width) continue;
       round(c, f.x, f.y, f.w, f.h, 5, b.soil); round(c, f.x, f.y, f.w, 9, 3, b.edge);
@@ -359,8 +392,42 @@
       if (x % 80 === 0) { ellipse(c, x + 10, y - 15, 4, 4, "#fae0ac"); ellipse(c, x + 10, y - 15, 1.8, 1.8, "#c39a53"); }
     }
     for (const a of g.gimmicks) if (a.x + a.w > camera - 80 && a.x < camera + width + 80) gimmick(c, a, time);
+    for (const cp of g.stage.checkpoints) {
+      if (cp.x < camera - 50 || cp.x > camera + width) continue;
+      const active = g.checkpoint && g.checkpoint.x >= cp.x;
+      round(c, cp.x, cp.y - 65, 6, 65, 2, "#b5c4a5");
+      leaf(c, cp.x + 13, cp.y - 58, 18, active ? "#d8f794" : "#80b7ad", Math.sin(time) * .15);
+      if (active) ellipse(c, cp.x + 3, cp.y, 30, 8, "#d8f79466");
+    }
+    for (const r of g.stage.records) {
+      if (r.x < camera - 40 || r.x > camera + width) continue;
+      if (r.coverId && g.gimmicks.some(a => a.id === r.coverId && a.active)) {
+        ellipse(c, r.x + 14, r.y + 22, 3, 7, "#b0f5e1"); continue;
+      }
+      const found = g.collectedRecords.has(r.id);
+      round(c, r.x - 4, r.y, 36, 38, 4, "#374e52");
+      round(c, r.x, r.y + 4, 28, 20, 2, found ? "#6e9085" : "#b0f5e1");
+      c.fillStyle = "#254d49"; c.font = "bold 16px sans-serif"; c.fillText(found ? "✓" : "?", r.x + 8, r.y + 20);
+      if (!found) ellipse(c, r.x + 14, r.y - 12 + Math.sin(time * 3) * 3, 5, 5, "#d2ffdc");
+    }
+    if (!g.supplyTaken) { const s = g.stage.supply; leaf(c, s.x + 13, s.y + 13, 18, "#e0f797", time); }
+    for (const t of g.targets) if (t.active && t.x > camera - 40 && t.x < camera + width) {
+      ellipse(c, t.x + 14, t.y + 14, 20, 20, "#c9ebac");
+      ellipse(c, t.x + 14, t.y + 14, 12, 12, "#325e52");
+      leaf(c, t.x + 14, t.y + 14, 8, "#d8ee9c");
+    }
     if (g.stage.boss) {
       const arena = g.stage.platforms.at(-1);
+      if (g.stage.id === 50) {
+        const center = arena.x + arena.w / 2;
+        for (let i = 0; i < 5; i++) {
+          c.strokeStyle = "#91c6b33b"; c.lineWidth = 14; c.beginPath();
+          c.moveTo(arena.x + i * 390, 540); c.bezierCurveTo(arena.x + i * 390, 230, center, 130, center, 400); c.stroke();
+        }
+        c.strokeStyle = "#c0ebbf88"; c.lineWidth = 4;
+        c.beginPath(); c.arc(center, 200, 125, time * .1, time * .1 + Math.PI * 1.7); c.stroke();
+        c.fillStyle = "#dfefc5"; c.font = "20px monospace"; c.fillText("ZERO PARADISE / ABSORPTION CHAMBER", center - 235, 55);
+      }
       for (const x of [arena.x + 12, arena.x + arena.w - 35]) {
         round(c, x, P.FLOOR - 180, 22, 180, 3, b.near);
         round(c, x - 7, P.FLOOR - 188, 36, 15, 3, b.edge);

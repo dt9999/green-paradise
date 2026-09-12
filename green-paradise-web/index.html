@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="グリーンパラダイス">
-  <title>グリーンパラダイス | 50の冒険</title>
+  <title>グリーンパラダイス | 第1部：失われた緑</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=0.6.0">
+  <link rel="stylesheet" href="./styles.css?v=1.1.0">
 </head>
 <body data-screen="title">
   <canvas id="gameCanvas" aria-label="グリーンの冒険の風景"></canvas>
@@ -22,11 +22,11 @@
   <main>
     <section id="title" class="screen title-screen">
       <div class="title-copy">
-        <p class="eyebrow">A LITTLE ROBOT. A GREENER WORLD.</p>
+        <p class="eyebrow">第1部：失われた緑 / THE LOST GREEN</p>
         <h1>グリーン<br><span>パラダイス</span></h1>
         <p class="lead">その小さな一歩が、<br>世界をみどりに変えていく。</p>
         <div class="title-facts"><span>10 の世界</span><span>50 の冒険</span><span>10 体のボス</span></div>
-        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 0.6.0</small></div>
+        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 1.1.0</small></div>
         <p class="title-hint">A・D 移動 ／ W ジャンプ ／ S 急降下<br>スマホは画面のボタンで遊べます</p>
       </div>
       <div class="scene-caption"><span>01 / THE FIRST SPROUT</span><strong>はじまりの森</strong><small>グリーンと、もう一度芽ぶく世界へ。</small></div>
@@ -42,9 +42,9 @@
       <div class="shop-scroll" tabindex="0" aria-label="上下にスクロールする商品一覧"><h3>グリーンを強くする</h3><div id="shopItems" class="shop-grid"></div><h3>先のステージへ</h3><div id="unlockItem"></div></div>
     </section>
     <section id="result" class="screen result-screen" hidden><div class="result-card"><p id="resultEyebrow" class="eyebrow"></p><h2 id="resultTitle"></h2><p id="resultText"></p><div id="resultReward" class="result-reward"></div><div class="result-actions"><button id="retryButton" class="primary">もう一度挑戦</button><button data-map class="primary">地図へ戻る →</button></div></div></section>
-    <section id="ending" class="screen result-screen" hidden><div class="result-card ending-card"><p class="eyebrow">FINAL BOSS DEFEATED · WORLD RESTORED</p><h2>世界に、<br>みどりが帰ってきた。</h2><p>小さな足あとが、森になった。<br>グリーンときみが、この世界を救ったんだ。</p><div class="ending-medal">WORLD SAVED</div><p>遊んでくれて、ありがとう。</p><button data-map class="primary">冒険の地図へ →</button></div></section>
+    <section id="ending" class="screen result-screen" hidden><div class="result-card ending-card"><p class="eyebrow">第1部 / 失われた緑</p><h2 id="endingTitle">奪われた光が、ほどけていく。</h2><p id="endingText"></p><div id="endingMedal" class="ending-medal">PART I · GREEN RETURNS</div><button id="endingMap" data-map class="primary" hidden>第1部の地図へ →</button></div></section>
   </main>
-  <div id="playHud" class="play-hud" hidden><span id="stageLabel"></span><span id="hearts"></span><span id="leafStatus"></span></div>
+  <div id="playHud" class="play-hud" hidden><span id="stageLabel"></span><span id="hearts"></span><span id="leafStatus"></span><small id="journeyStatus"></small></div>
   <div id="bossHud" class="boss-hud" hidden><div><b id="bossName"></b><span id="bossTip"></span></div><progress id="bossHealth" max="1" value="1"></progress></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <button id="hintButton" class="small-button hint-button" hidden>？ ヒント</button>
@@ -57,6 +57,6 @@
   </div>
   <dialog id="menu"><div class="menu-head"><h2>ひとやすみ</h2><button id="closeMenu" class="small-button" aria-label="メニューを閉じる">×</button></div><p>メニューを開いている間は、ゲームが止まるよ。</p><button id="resumeButton" class="primary">つづける</button><button id="restartButton" class="small-button">ステージをやり直す</button><button id="mapFromMenu" class="small-button">冒険の地図へ戻る</button><button id="soundButton" class="small-button">音：オン</button><details><summary>遊び方</summary><p class="instructions">A / D：左右　W / ↑ / Space：ジャンプ<br>S / ↓：急降下　E：葉っぱ（アイテム取得後）<br>スマホは画面のボタンで操作します。葉っぱは1発1pt。</p></details><details><summary>このゲームについて</summary><p>グリーンパラダイス<br>つくった人：グリーンパラダイスチーム</p><p>記録はこの端末の中だけに保存されます。名前・位置情報・連絡先などは集めません。</p><p class="menu-note">プライバシーポリシーは公式サイトにあります。</p></details></dialog>
   <noscript>ゲームを遊ぶには、ブラウザの JavaScript を有効にしてください。</noscript>
-  <script src="./gimmicks.js?v=0.6.0"></script><script src="./world.js?v=0.6.0"></script><script src="./music.js?v=0.6.0"></script><script src="./art.js?v=0.6.0"></script><script src="./game.js?v=0.6.0"></script>
+  <script src="./gimmicks.js?v=1.1.0"></script><script src="./campaign.js?v=1.1.0"></script><script src="./world.js?v=1.1.0"></script><script src="./music.js?v=1.1.0"></script><script src="./art.js?v=1.1.0"></script><script src="./game.js?v=1.1.0"></script>
 </body>
 </html>

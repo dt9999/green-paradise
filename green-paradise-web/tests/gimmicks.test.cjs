@@ -145,7 +145,7 @@ test("All 50 stages remain traversable at starting stats with gimmicks and hazar
     const g = P.createGame(stage, P.sanitizeSave({}));
     // Isolate navigation from enemy combat; keep every toy, hazard and heart rule.
     g.enemies = [];
-    for (let n = 0; n < 6000 && g.state === "playing"; n++) {
+    for (let n = 0; n < stage.length / 205 * 130 && g.state === "playing"; n++) {
       const p = g.player;
       const floor = [...stage.platforms, ...G.surfaces(g)].find(f => p.x + p.w > f.x && p.x < f.x + f.w && Math.abs(p.y + p.h - f.y) < 1);
       const obstacle = g.gimmicks.some(a => ((a.kind === "brittle" && a.active) || a.kind === "steam") && a.x > p.x && a.x - p.x < 85);

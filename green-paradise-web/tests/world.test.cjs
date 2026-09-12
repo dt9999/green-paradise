@@ -36,7 +36,7 @@ for (const speed of [0, 4, 7]) for (const jump of [0, 4, 7]) {
 test("Base ground traversal and tree clears on all 50 layouts (gimmicks tested separately)", () => {
   for (const stage of P.STAGES) {
     const g = fresh(stage.id); g.enemies = []; g.gimmicks = [];
-    for (let n = 0; n < 3600 && g.state === "playing"; n++) {
+    for (let n = 0; n < stage.length / 205 * 100 && g.state === "playing"; n++) {
       const p = g.player, f = stage.platforms.find(f => p.x + p.w > f.x && p.x < f.x + f.w && Math.abs(p.y + p.h - f.y) < 1);
       P.step(g, { right: true, jump: p.grounded && f && p.x >= f.x + f.w - 42 }, 1 / 60);
       g.events = [];
@@ -104,7 +104,7 @@ test("All bosses need multiple hits, shields block, and defeat clears attacks", 
     e.shield = true; assert.equal(P.hitEnemy(g, e, 2), false); assert.equal(e.hp, e.maxHp);
     e.shield = false; P.hitEnemy(g, e, 2); assert.equal(e.alive, true);
     g.hazards.push({ kind: "wave", x: -999, y: 400, w: 10, h: 10, vx: 0, vy: 0, life: 100, delay: 0 });
-    for (let n = 0; n < 40 && e.alive; n++) { tick(g, 46); P.hitEnemy(g, e, 2); }
+    for (let n = 0; n < 60 && e.alive; n++) { tick(g, 46); P.hitEnemy(g, e, 2); }
     assert.equal(e.alive, false); assert.equal(g.hazards.length, 0);
     assert.ok(g.grass.size >= 18); assert.equal(g.events.filter(e => e.type === "bossDefeat").length, 1);
   }

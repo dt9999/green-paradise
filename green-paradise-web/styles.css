@@ -104,3 +104,12 @@ body[data-screen="play"] .wordmark { visibility: hidden; }
 .boss-intro small { font-size: 10px; letter-spacing: .2em; }.boss-intro span { font-size: 12px; }
 @media (max-height: 540px) and (orientation: landscape) { .hint-button { top: max(10px, env(safe-area-inset-top)); }.tutorial-hint { top: 68px; right: 20px; font-size: 10px; }.boss-intro { padding: 18px; gap: 7px; } }
 @media (max-width: 700px) and (orientation: portrait) { .hint-button { top: max(12px, env(safe-area-inset-top)); padding: 12px; }.tutorial-hint { top: 145px; max-width: 85vw; } }
+/* Chapter scenes and journal remain usable on small landscape screens. */
+#endingText { white-space: pre-line; }
+#ending[data-scene="mystery"] .ending-card { background: #15392fe8; color: #ecf6dc; }
+#ending .ending-card { transition: background 2s, color 2s; max-height: 84dvh; overflow-y: auto; }
+#ending .ending-card h2 { font-size: clamp(23px, 4vw, 48px); }
+#journeyStatus { font-size: 10px; opacity: .85; }
+#researchNotes { max-height: 44dvh; overflow-y: auto; padding: 8px; }
+#researchNotes p { line-height: 1.9; }
+#journalGuide { border-top: 1px solid #78977b; margin-top: 18px; }

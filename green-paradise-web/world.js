@@ -1,6 +1,7 @@
 (function (root) {
   "use strict";
-  const VERSION = "0.6.0";
+  const VERSION = "1.1.0";
+  const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
   const GRAVITY = 1500;
@@ -49,10 +50,10 @@
     const region = Math.floor((id - 1) / 5), local = (id - 1) % 5;
     const rng = random(id * 931 + 71), platforms = [], enemies = [], crystals = [];
     let x = 0, y = FLOOR;
-    const count = id === 1 ? 7 : 8 + Math.floor(region / 4) + Math.min(local, 3);
+    const count = id === 50 ? 48 : 22 + region * 2 + local;
     for (let n = 0; n < count; n++) {
       // Every gap and rise is reachable with the starting jump, without upgrades.
-      const width = n === 0 ? 620 : 270 + Math.floor(rng() * 170);
+      const width = n === 0 ? 620 : 380 + Math.floor(rng() * 190);
       const p = { x, y, w: width, h: 600 - y };
       platforms.push(p);
       if (n > 0) {
@@ -61,15 +62,17 @@
         if (n === 1 || n % 3 === 0) type = REGION_ENEMIES[region];
         else if (region > 0 && local >= 2 && n % 3 === 2) type = REGION_ENEMIES[region - 1];
         if (id === 1) type = n === 3 ? "stump" : "crawler";
-        if (id !== 1 || n === 2 || n === 3) enemies.push({ type, x: x + width * .55, platform: n });
+        if (id !== 1 || n === 2 || n === 3 || n > 6 && n % 3 === 0) enemies.push({ type, x: x + width * .55, platform: n });
+        if (region > 1 && n % 7 === 5) enemies.push({ type: "crawler", x: x + width * .8, platform: n });
         crystals.push({ x: x + 64, y: y - 66, w: 16, h: 20 });
       }
       x += width + (id === 1 ? 62 : 60 + Math.floor(rng() * (24 + region * 3)));
       y = clamp(y + (Math.floor(rng() * 3) - 1) * 24, 358, FLOOR);
     }
-    const boss = local === 4 ? BOSSES[region] : null;
+    const boss = local === 4 ? { ...BOSSES[region] } : null;
+    if (id === 50) { boss.name = "ゼロパラダイス"; boss.hp = 96; boss.tip = "吸収の輪が光ったら離れる！ 急降下で装甲を開こう。"; }
     const last = platforms[platforms.length - 1];
-    last.w = boss ? 1150 : 620;
+    last.w = id === 50 ? 1800 : boss ? 1150 : 620;
     last.y = FLOOR; last.h = 170;
     if (boss) {
       // Leave the arena free of ordinary enemies.
@@ -77,10 +80,10 @@
       enemies.push({ type: "boss", x: last.x + 610, platform: platforms.length - 1 });
     }
     const gimmicks = G.build(platforms, region, local, id, crystals);
-    return { id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals, gimmicks,
+    return C.decorate({ id, region, local, biome: BIOMES[region], boss, platforms, enemies, crystals, gimmicks,
       name: id === 1 ? "はじめの一歩" : boss ? boss.name : `${G.INFO[G.REGIONS[region][local % G.REGIONS[region].length]][0]}${["の道", "の小径", "の冒険", "の試練"][local]}`,
       length: last.x + last.w, goalX: last.x + last.w - 120,
-      bonus: 100 + id * 12 + (boss ? 180 : 0), cost: 90 + id * 12 };
+      bonus: 100 + id * 12 + (boss ? 180 : 0), cost: 90 + id * 12 });
   }
   const STAGES = Array.from({ length: 50 }, (_, i) => makeStage(i + 1));
   const UPGRADES = [
@@ -98,6 +101,8 @@
       ? [...new Set(raw.clearedStages.filter(n => Number.isInteger(n) && n >= 1 && n <= 50))]
       : Array.from({ length: highestCleared }, (_, i) => i + 1);
     return { points: num(raw.points, 9999999), highestCleared, clearedStages,
+      schemaVersion: 2, activePart: C.PART.id,
+      records: [...new Set((Array.isArray(raw.records) ? raw.records : []).filter(id => typeof id === "string" && C.validRecord(id)))],
       unlockedStages: Math.max(1, Math.min(50, highestCleared + 1), num(raw.unlockedStages, 50)),
       upgrades: Object.fromEntries(UPGRADES.map(u => [u.id, num(raw.upgrades?.[u.id], u.max)])),
       lastDailyBonus: typeof raw.lastDailyBonus === "string" ? raw.lastDailyBonus : "",
@@ -108,12 +113,14 @@
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
       gimmicks: G.create(stage), seenGimmicks: new Set(),
+      collectedRecords: new Set(save.records), checkpoint: null, supplyTaken: false,
+      targets: stage.targets.map(t => ({ ...t, active: true })),
       leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, bossIntro: 0, seenEnemies: new Set(),
       player: { x: 80, y: FLOOR - 52, w: 36, h: 52, vx: 0, vy: 0, facing: 1, grounded: true, dive: false,
         hp: stats(upgrades).hp, maxHp: stats(upgrades).hp, invincible: 0, coyote: .1, jumpBuffer: 0 },
       enemies: stage.enemies.map((e, i) => {
         const p = stage.platforms[e.platform], boss = e.type === "boss";
-        const def = boss ? { w: 100, h: 78, hp: stage.boss.hp, speed: 36, points: 150 + stage.region * 30 } : ENEMIES[e.type];
+        const def = boss ? { w: stage.id === 50 ? 140 : 100, h: stage.id === 50 ? 90 : 78, hp: stage.boss.hp, speed: 36, points: 150 + stage.region * 30 } : ENEMIES[e.type];
         return { ...e, ...def, maxHp: def.hp, x: e.x, y: p.y - def.h, baseY: p.y - def.h, baseX: e.x,
           lo: p.x + 24, hi: p.x + p.w - def.w - 24, dir: -1, alive: true, age: i * .7, hit: 0,
           shield: false, boss, cycle: 0, attack: 0, warning: false, openTime: 0, recovery: 0, phase: 1,
@@ -202,7 +209,11 @@
     e.cycle += dt;
     let skill = g.stage.boss.skill;
     if (skill === "final") skill = ["wave", "rain", "shield", "fan"][e.attack % 4];
-    const period = e.phase === 2 ? 3 : 3.8;
+    if (g.stage.id === 50) {
+      if (e.hp <= e.maxHp / 3 && e.phase === 2) { e.phase = 3; emit(g, "bossFinalPhase"); }
+      skill = ["wave", "absorb", "shield", "rain", "fan"][e.attack % 5];
+    }
+    const period = e.phase >= 2 ? (e.phase === 3 ? 2.6 : 3) : 3.8;
     e.warning = e.cycle > period - .85;
     e.shield = skill === "shield" && e.cycle < 1.9;
     let speed = e.phase === 2 ? 46 : 26;
@@ -220,6 +231,11 @@
     if (e.cycle >= period) {
       e.cycle = 0; e.dir = p.x < e.x ? -1 : 1;
       if (skill !== "jump") { attack(g, e, skill); emit(g, "bossAttack"); }
+      if (skill === "absorb") {
+        g.hazards.push({ x: clamp(p.x - 80, e.lo, e.hi - 160), y: e.baseY + e.h - 26,
+          w: 160, h: 26, vx: 0, vy: 0, life: 1.2, delay: 1.1, kind: "absorb" });
+      }
+      if (e.phase === 3) attack(g, e, "fan");
       if (e.phase === 2) attack(g, e, ["fan", "wave", "rain", "wave", "fan", "fan", "wave", "wave", "storm", "quake"][g.stage.region]);
       e.attack++;
     }
@@ -345,10 +361,16 @@
       }
     }
     G.hazards(g, hooks);
+    C.update(g, hooks);
     if (p.grounded && move && Math.floor(g.time * 5) !== Math.floor((g.time - dt) * 5)) emit(g, "step");
     g.shots = g.shots.filter(s => {
       const prevX = s.x; s.x += s.vx * dt; s.life -= dt;
       const sweep = { ...s, x: Math.min(prevX, s.x), w: s.w + Math.abs(s.x - prevX) };
+      const target = g.targets.find(t => t.active && overlap(sweep, t));
+      if (target) {
+        target.active = false; emit(g, "points", { amount: 30 }); emit(g, "pickup");
+        particles(g, target.x, target.y, "#e4f6a7", 18); return false;
+      }
       if (surfaces.some(f => (!f.kind || f.solid) && f.active !== false && overlap(sweep, f))) return false;
       const e = g.enemies.find(e => e.alive && !e.intangible && overlap(sweep, e));
       if (e) { hitEnemy(g, e, stats(g.upgrades).damage / 2, undefined, "leaf"); return false; }
@@ -373,7 +395,7 @@
     g.particles = g.particles.filter(a => { a.x += a.vx * dt; a.y += a.vy * dt; a.vy += 130 * dt; a.life -= dt; return a.life > 0; });
     if (g.state !== "playing") return;
     if (p.y > 620) { g.state = "lost"; emit(g, "lost", { reason: "穴に落ちた。少し手前からジャンプしてみよう。" }); }
-    else if (!boss && overlap(p, { x: stage.goalX, y: FLOOR - 170, w: 70, h: 170 })) {
+    else if ((stage.id === 50 && g.enemies.some(e => e.boss && !e.alive)) || !boss && overlap(p, { x: stage.goalX, y: FLOOR - 170, w: 70, h: 170 })) {
       g.state = "won"; emit(g, "won");
     }
   }

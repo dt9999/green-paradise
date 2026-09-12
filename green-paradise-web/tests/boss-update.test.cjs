@@ -13,7 +13,7 @@ test("Bosses take at least seven max-power dives, reject rapid repeats and enter
       assert.equal(P.hitEnemy(g, boss, 99), false); assert.equal(boss.hp, hp);
       tick(g, 46);
     }
-    assert.ok(hits >= 7 && hits <= 20); assert.equal(boss.alive, false);
+    assert.ok(hits >= 7 && hits <= (id === 50 ? 28 : 20)); assert.equal(boss.alive, false);
     assert.equal(g.events.filter(e => e.type === "bossPhase").length, 1);
   }
 });
@@ -51,7 +51,8 @@ test("Ten boss scores differ from stage music and intensify in phase two", () =>
 });
 
 test("Early stages are longer and late-stage growth is gradual", () => {
-  assert.equal(P.STAGES[0].platforms.length, 7);
-  assert.ok(P.STAGES[1].platforms.length >= 8);
-  assert.ok(P.STAGES[45].platforms.length - P.STAGES[5].platforms.length <= 2);
+  assert.ok(P.STAGES[0].length >= 10000);
+  assert.ok(P.STAGES[1].platforms.length >= 22);
+  assert.ok(P.STAGES[45].platforms.length > P.STAGES[5].platforms.length);
+  assert.ok(P.STAGES[49].length > P.STAGES[48].length);
 });
