@@ -1,4 +1,21 @@
 :root { --ink: #234a3d; --paper: #f4f1df; --muted: #708376; --line: #284a3d25; --leaf: #d1e79e; --shadow: 0 20px 70px #142f3026; font-family: "Avenir Next", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif; color: var(--ink); }
+#storyEvent { width: min(900px, 94vw); max-height: 88dvh; padding: 26px 32px; background: linear-gradient(115deg, #143d36f7, #285445f7); color: #f6f3dc; border: 1px solid #b8cc91; box-shadow: 0 0 0 7px #153d3540, 0 25px 90px #0d292ccc; }
+#storyEvent::backdrop { background: linear-gradient(#0b28283b 50%, #0b2828a8); }
+#storyEvent .primary { background: #d6e8a7; color: #203f34; box-shadow: 0 4px 0 #718b58; }
+.story-top, #storyEvent footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.story-top > span { font-size: 10px; letter-spacing: .2em; color: #c0d5a7; }
+#storyEvent h2 { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 26px; padding-bottom: 18px; border-bottom: 1px solid #a9c29055; margin: 12px 0 20px; letter-spacing: .06em; }
+.story-dialogue { display: flex; align-items: center; gap: 25px; min-height: 150px; }
+.story-copy { flex: 1; min-width: 0; }#storySpeaker { color: #d6eea6; font-size: 13px; letter-spacing: .12em; }
+#storyText { font-size: clamp(17px, 2.1vw, 22px); line-height: 1.9; margin: 10px 0 20px; }
+#storyPortrait { flex: 0 0 94px; height: 105px; border: 2px solid #8cac87; border-radius: 25px; background: radial-gradient(ellipse, #406e58, #173e35); display: grid; place-items: center; }
+#storyPortrait span { width: 65px; height: 53px; background: #a7cc79; border-radius: 16px; border-bottom: 7px solid #6c9159; position: relative; box-shadow: 0 7px 0 #112f2b; }
+#storyPortrait span::before { content: ""; position: absolute; inset: 12px 8px; border-radius: 7px; background: #173b36; }
+#storyPortrait span::after { content: ""; position: absolute; width: 7px; height: 9px; background: #d6ffb7; left: 20px; top: 18px; box-shadow: 19px 0 #d6ffb7; border-radius: 3px; }
+#storyEvent[data-speaker="narrator"] #storyPortrait { display: none; }
+#storyEvent footer { border-top: 1px solid #a9c29055; padding-top: 16px; }#storyPage { font-size: 11px; color: #bccfab; }
+@media (max-height: 540px) { #storyEvent { padding: 14px 24px; }#storyEvent h2 { font-size: 20px; margin: 6px 0 12px; padding-bottom: 10px; }.story-dialogue { min-height: 100px; }#storyText { font-size: 17px; margin: 6px 0 12px; line-height: 1.7; }#storyEvent footer { padding-top: 10px; }#storyEvent .primary { padding: 10px 20px; } }
+@media (max-width: 500px) { #storyEvent { padding: 20px; }.story-dialogue { align-items: flex-start; gap: 14px; }#storyPortrait { flex-basis: 58px; height: 72px; }#storyPortrait span { transform: scale(.7); }#storyEvent h2 { font-size: 22px; }#storyEvent footer { flex-wrap: wrap; } }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #224e40; }

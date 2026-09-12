@@ -15,7 +15,40 @@
   const screens = ["title", "map", "shop", "result", "ending"];
   const hintHistory = [];
   let selectedRecord = null, newestRecord = null, noticeTime = 0;
-  const paused = () => $("menu").open || $("journal").open || $("journalWelcome").open;
+  const paused = () => $("menu").open || $("journal").open || $("journalWelcome").open || $("storyEvent").open;
+  const storyQueue = [];
+  let activeStory = null, storyPage = 0;
+  function queueStory(trigger, done = () => {}) {
+    const scene = C.story(game?.stage, trigger);
+    if (!scene) { done(); return; }
+    storyQueue.push({ scene, done }); pumpStory();
+  }
+  function pumpStory() {
+    if (paused() || !storyQueue.length || document.hidden) return;
+    activeStory = storyQueue.shift(); storyPage = 0; clearInput(); accumulator = 0;
+    renderStory(); $("storyEvent").showModal(); syncHud();
+  }
+  function renderStory() {
+    const s = activeStory.scene, line = s.lines[storyPage];
+    $("storyChapter").textContent = `PART I / STAGE ${String(s.stage).padStart(2, "0")}`;
+    $("storyTitle").textContent = s.title;
+    $("storySpeaker").textContent = line.speaker;
+    $("storyText").textContent = line.text;
+    $("storyEvent").dataset.speaker = line.speaker === "グリーン" ? "green" : "narrator";
+    $("storyPage").textContent = `${storyPage + 1} / ${s.lines.length} · 冒険は一時停止中`;
+    $("nextStory").textContent = storyPage + 1 < s.lines.length ? "次へ →" : s.trigger === "start" ? "冒険へ →" : "つづける →";
+  }
+  function endStory() {
+    if (!activeStory) return;
+    const done = activeStory.done; activeStory = null; $("storyEvent").close();
+    clearInput(); accumulator = 0; done(); syncHud(); pumpStory();
+  }
+  $("nextStory").addEventListener("click", () => {
+    if (!activeStory) return;
+    if (++storyPage >= activeStory.scene.lines.length) endStory(); else renderStory();
+  });
+  $("skipStory").addEventListener("click", endStory);
+  $("storyEvent").addEventListener("cancel", e => { e.preventDefault(); endStory(); });
   const replayEnding = document.createElement("button"); replayEnding.id = "replayEnding";
   replayEnding.className = "small-button"; replayEnding.textContent = "第1部のエピローグを見る";
   $("menu").append(replayEnding);
@@ -141,6 +174,7 @@
     if (id > save.unlockedStages) return;
     game = P.createGame(P.STAGES[id - 1], save); tutorialStep = -1; accumulator = 0;
     show("play"); sound.theme("stage", game.stage.region);
+    queueStory("start");
     toast(game.stage.boss ? `この先に ${game.stage.boss.name} がいるよ。` : `${game.stage.name} · 大きな木まで進もう。`);
   }
   function goMap() {
@@ -170,7 +204,7 @@
     const events = game.events.splice(0);
     for (const e of events) {
       if (e.type === "points") points(e.amount);
-      else if (e.type === "won") finish(true);
+      else if (e.type === "won") queueStory(game.stage.id === 50 ? "boss" : "goal", () => finish(true));
       else if (e.type === "lost") finish(false, e.reason);
       else if (e.type === "record") {
         if (!save.records.includes(e.record.id)) save.records.push(e.record.id);
@@ -192,7 +226,7 @@
         if (e.type === "boss") { toast(e.text); sound.theme("boss", game.stage.region); }
         if (e.type === "bossPhase") sound.theme("boss", game.stage.region, 2);
         if (e.type === "bossFinalPhase") { sound.theme("boss", game.stage.region, 2); toast("吸収炉が暴走！ 光る地面から離れよう。"); }
-        if (e.type === "bossDefeat") { toast("ボスをたおした！ 大きな木へ進もう。"); sound.theme("clear"); }
+        if (e.type === "bossDefeat") { sound.theme("clear"); if (game.stage.id !== 50) queueStory("boss"); }
         if (e.type === "blocked") toast("バリアが消えるのを待って攻撃しよう！");
       }
     }
@@ -210,6 +244,7 @@
   }
   function frame(ms) {
     const dt = last ? Math.min(.08, (ms - last) / 1000) : 0; last = ms; visualTime += dt;
+    pumpStory();
     if (currentScreen === "ending" && !paused() && !document.hidden) {
       endingTime += dt;
       const scene = C.ENDING.filter(s => endingTime >= s.at).at(-1);
