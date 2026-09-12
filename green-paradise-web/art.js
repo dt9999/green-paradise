@@ -375,7 +375,13 @@
       round(c, x, y - h, 118, h, 2, "#33484588");
       for (let j = 0; j < h / 35 - 1; j++) round(c, x + 12, y - h + 15 + j * 35, 85, 18, 2, j % 2 ? "#162d3288" : "#76968d66");
       c.strokeStyle = "#9bb3a466"; c.lineWidth = 3; c.beginPath(); c.moveTo(x + 55, y - h); c.lineTo(x + 45, y - h + 43); c.lineTo(x + 66, y - h + 58); c.stroke();
-      if (type === "shelter") { round(c, x + 38, y - 58, 44, 58, 2, "#162f32"); }
+      if (type === "shelter") {
+        // A cutaway passage, not a door into another screen.
+        round(c, x + 28, y - 145, 80, 62, 2, "#142e31");
+        round(c, x - 8, y - 88, 144, 88, 4, "#142e31");
+        round(c, x - 10, y - 88, 148, 7, 2, "#9eb594");
+        round(c, x - 18, y - 6, 166, 6, 2, "#b4d291");
+      }
     }
     for (const f of g.stage.platforms) {
       if (f.x + f.w < camera || f.x > camera + width) continue;
@@ -392,6 +398,18 @@
       if (x % 80 === 0) { ellipse(c, x + 10, y - 15, 4, 4, "#fae0ac"); ellipse(c, x + 10, y - 15, 1.8, 1.8, "#c39a53"); }
     }
     for (const a of g.gimmicks) if (a.x + a.w > camera - 80 && a.x < camera + width + 80) gimmick(c, a, time);
+    for (const l of g.stage.landmarks) {
+      if (l.type !== "shelter" || l.x < camera - 180 || l.x > camera + width) continue;
+      const blocked = g.gimmicks.some(a => a.id === l.entranceBlock && a.active);
+      c.save(); c.font = "bold 12px sans-serif"; c.textAlign = "center";
+      round(c, l.x - 115, l.y - 44, 113, 27, 5, "#183e35ef");
+      c.fillStyle = "#e2f5be"; c.fillText("地上の通路 →", l.x - 59, l.y - 26);
+      if (blocked) {
+        round(c, l.x + 3, l.y - 112, 147, 25, 5, "#fff0c8");
+        c.fillStyle = "#684d2d"; c.fillText("↓ 急降下でこわす", l.x + 76, l.y - 95);
+      } else { c.fillStyle = "#d9f7a4"; c.fillText("ここを歩いて通れる →", l.x + 63, l.y - 34); }
+      c.restore();
+    }
     for (const cp of g.stage.checkpoints) {
       if (cp.x < camera - 50 || cp.x > camera + width) continue;
       const active = g.checkpoint && g.checkpoint.x >= cp.x;
@@ -460,7 +478,20 @@
     for (const s of g.shots) leaf(c, s.x + 9, s.y + 6, 12, "#d5ee93", time * 8);
     robot(c, pForRender(g.player), time);
     for (const a of g.particles) { c.globalAlpha = Math.min(1, a.life * 2); leaf(c, a.x, a.y, a.size, a.color, a.life * 8); }
-    c.globalAlpha = 1; c.restore();
+    c.globalAlpha = 1;
+    for (const target of g.targets) {
+      if (target.active || target.hitAt === undefined) continue;
+      const age = g.time - target.hitAt;
+      if (age < 0 || age > 1.8) continue;
+      c.save(); c.globalAlpha = Math.min(1, (1.8 - age) / .45);
+      const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      c.translate(P.clamp(target.x + 14, camera + 85, camera + width - 85), target.y - 30 - (reduced ? 0 : age * 28));
+      const pop = reduced ? 1 : 1 + Math.sin(Math.min(1, age / .25) * Math.PI) * .18;
+      c.scale(pop, pop); c.textAlign = "center"; c.font = "900 25px sans-serif";
+      c.lineJoin = "round"; c.lineWidth = 6; c.strokeStyle = "#173e35"; c.strokeText("+30 POINT", 0, 0);
+      c.fillStyle = "#edffc0"; c.fillText("+30 POINT", 0, 0); c.restore();
+    }
+    c.restore();
   }
   function pForRender(p) { return p; }
   window.ParadiseArt = { render, tree, robot, leaf };

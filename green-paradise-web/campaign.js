@@ -108,8 +108,9 @@
       return { x: f.x, name: SECTION_NAMES[stage.region][n], index: n };
     });
     stage.records = []; stage.checkpoints = []; stage.landmarks = [];
+    let nextGimmickId = stage.gimmicks.length;
     const add = (kind, x, y, w, extra = {}) => stage.gimmicks.push({
-      id: `expedition-${stage.gimmicks.length}`, kind, x, y, w, h: 16, range: 0, ...extra,
+      id: `expedition-${nextGimmickId++}`, kind, x, y, w, h: 16, range: 0, ...extra,
     });
     for (let n = 1; n < ground.length - 1; n++) {
       const f = ground[n];
@@ -124,11 +125,16 @@
       }
       if (n >= 4 && n % 5 === 2) {
         // A roof and a walkable lower passage form a genuine two-level fork.
+        stage.gimmicks = stage.gimmicks.filter(a => !(a.y < f.y - 62 &&
+          a.x - (a.range || 0) < f.x + 275 && a.x + a.w + (a.range || 0) > f.x + 190));
         add("moving", f.x + 20, f.y - 70, 100);
-        add("moving", f.x + 120, f.y - 145, Math.max(160, f.w - 140));
+        // Leave a hatch above the breakable block so a dive reaches it from the roof.
+        add("moving", f.x + 120, f.y - 145, 60);
+        add("moving", f.x + 280, f.y - 145, Math.max(80, f.w - 300));
         add("brittle", f.x + 205, f.y - 62, 54, { h: 62, solid: true });
+        const entranceBlock = stage.gimmicks.at(-1).id;
         stage.crystals.push({ x: f.x + 275, y: f.y - 32, w: 16, h: 20 });
-        stage.landmarks.push({ x: f.x + 155, y: f.y, type: "shelter" });
+        stage.landmarks.push({ x: f.x + 155, y: f.y, type: "shelter", entranceBlock });
       }
     }
     const stops = [Math.floor(ground.length / 3), Math.floor(ground.length * 2 / 3)];
@@ -143,7 +149,7 @@
     // A guaranteed supply teaches leaf use, while an optional target grants a reward.
     const supply = ground[Math.max(4, Math.floor(ground.length / 2))];
     stage.supply = { x: supply.x + 18, y: supply.y - 32, w: 26, h: 26 };
-    stage.targets = [{ x: supply.x + 210, y: supply.y - 40, w: 28, h: 28 }];
+    stage.targets = [{ x: supply.x + 330, y: supply.y - 40, w: 28, h: 28 }];
     // Reserve a whole-height alcove, including moving platforms' swept bounds.
     // Decoration runs last so later hazards cannot cover the archive again.
     const preferred = Math.max(1, Math.floor((stage.local % 3 + .55) * (ground.length - 1) / 3));
@@ -158,6 +164,7 @@
     stage.crystals = stage.crystals.filter(c => c.x + c.w <= left || c.x >= right);
     stage.landmarks = stage.landmarks.filter(l => Math.abs(l.x - x) > 250);
     stage.records.push({ ...record(recordId(stage.id, 0)), x, y: f.y - 36, w: 28, h: 36 });
+    if (Math.abs(stage.targets[0].x - x) < 100) stage.targets[0].x = supply.x + 110;
     return stage;
   }
   function update(g, hooks) {

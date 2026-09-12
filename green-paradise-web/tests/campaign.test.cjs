@@ -1,6 +1,20 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const P = require('../world.js'), C = require('../campaign.js');
 const fresh = id => P.createGame(P.STAGES[id - 1], P.sanitizeSave({}));
+test('Passage blocks have unique IDs and can be reached by diving through the roof', () => {
+  for (const s of P.STAGES) {
+    assert.equal(new Set(s.gimmicks.map(a => a.id)).size, s.gimmicks.length);
+    for (const l of s.landmarks.filter(l => l.entranceBlock)) {
+      const g = fresh(s.id), block = g.gimmicks.find(a => a.id === l.entranceBlock);
+      if (!block) continue;
+      g.enemies = [];
+      Object.assign(g.player, { x: block.x + 6, y: block.y - 170, vy: 0, grounded: false, invincible: 999 });
+      P.step(g, { dive: true }, 1 / 60);
+      for (let i = 0; i < 70 && block.active; i++) P.step(g, {}, 1 / 60);
+      assert.equal(block.active, false, `stage ${s.id} ${block.id}`);
+    }
+  }
+});
 test('Only part one exists, every expedition has three sections and optional paths', () => {
   assert.equal(C.PART.last, 50);
   for (const s of P.STAGES) {
@@ -44,6 +58,11 @@ test('Leaf supply and optional target use real collection and shooting', () => {
   const t = g.targets[0]; Object.assign(g.player, { x: t.x - 55, y: t.y - 25, facing: 1 });
   P.shoot(g, 10); for (let i = 0; i < 15; i++) P.step(g, {}, 1 / 60);
   assert.equal(t.active, false); assert.equal(g.events.filter(e => e.type === 'points' && e.amount === 30).length, 1);
+  assert.ok(Number.isFinite(t.hitAt));
+  const hitAt = t.hitAt;
+  for (let i = 0; i < 120; i++) P.step(g, {}, 1 / 60);
+  assert.equal(t.hitAt, hitAt);
+  assert.equal(g.events.filter(e => e.type === 'points' && e.amount === 30).length, 1);
 });
 test('Zero has an absorption telegraph, three phases, and defeat ends only part one', () => {
   const g = fresh(50), b = g.enemies.find(e => e.boss);

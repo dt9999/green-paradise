@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.4";
+  const VERSION = "1.1.5";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -370,7 +370,7 @@
       const sweep = { ...s, x: Math.min(prevX, s.x), w: s.w + Math.abs(s.x - prevX) };
       const target = g.targets.find(t => t.active && overlap(sweep, t));
       if (target) {
-        target.active = false; emit(g, "points", { amount: 30 }); emit(g, "pickup");
+        target.active = false; target.hitAt = g.time; emit(g, "points", { amount: 30 }); emit(g, "pickup");
         particles(g, target.x, target.y, "#e4f6a7", 18); return false;
       }
       if (surfaces.some(f => (!f.kind || f.solid) && f.active !== false && overlap(sweep, f))) return false;
