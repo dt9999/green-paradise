@@ -31,6 +31,7 @@ body[data-cinematic="depart"] .map-scroll, body[data-cinematic="depart"] .stage-
 @media (max-width: 500px) { #storyEvent { padding: 20px; }.story-dialogue { align-items: flex-start; gap: 14px; }#storyPortrait { flex-basis: 58px; height: 72px; }#storyPortrait span { transform: scale(.7); }#storyEvent h2 { font-size: 22px; }#storyEvent footer { flex-wrap: wrap; } }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+#roomButton { position: fixed; z-index: 8; bottom: max(110px, calc(env(safe-area-inset-bottom) + 95px)); left: 50%; transform: translateX(-50%); padding: 12px 20px; background: #e6efb7; color: #244a3b; border: 2px solid #72985e; white-space: nowrap; }
 .small-button.danger-button { color: #913e32; border-color: #b8756455; background: #f9e8dc; }
 #deleteSaveButton { margin-top: 24px; }
 #deleteSaveDialog h2 { font-size: 24px; }

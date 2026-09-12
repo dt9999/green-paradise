@@ -152,11 +152,11 @@ test("Seven upgrade levels have progressively expensive prices and smaller stat 
     assert.equal(u.max, 7);
     const prices = Array.from({ length: 7 }, (_, n) => P.upgradeCost(u, n));
     for (let n = 1; n < prices.length; n++) assert.ok(prices[n] > prices[n - 1]);
-    assert.equal(prices[6], prices[0] * 32);
+    assert.equal(prices[6], prices[0] * 90);
     assert.equal(P.upgradeCost(u, 7), null);
     total += prices.reduce((a, b) => a + b, 0);
   }
-  assert.equal(total, 84240);
+  assert.equal(total, 187920);
   const u = P.sanitizeSave({ upgrades: { jump: 4, speed: 4, damage: 4, energy: 4, dropRate: 4 }, points: 12345 });
   assert.equal(u.points, 12345); assert.equal(u.upgrades.damage, 4);
   const s = P.stats(u.upgrades);

@@ -10,7 +10,7 @@ const url = process.env.TEST_URL || 'http://127.0.0.1:4173';
       const page = await context.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.goto(url);
-      assert.match(await page.locator('#version').textContent(), /1.1.5/);
+      assert.match(await page.locator('#version').textContent(), /1.1.6/);
       await page.locator('#startButton').tap(); assert.equal(await page.locator('.stage-node').count(), 50);
       await page.evaluate(() => { const create = Paradise.createGame; Paradise.createGame = (...args) => (window.testGame = create(...args)); });
       await page.locator('.stage-node').first().tap();
@@ -31,8 +31,12 @@ const url = process.env.TEST_URL || 'http://127.0.0.1:4173';
       assert.ok(await page.evaluate(() => testGame.player.x > 110));
       await page.evaluate(() => {
         const g = testGame, r = g.stage.records[0];
-        Object.assign(g.player, { x: r.x, y: r.y - 16, vy: 0, invincible: 99 });
-        g.camera = r.x - 250;
+        if (r.roomId) {
+          const d = g.stage.rooms.find(d => d.id === r.roomId); g.gimmicks.find(a => a.id === d.blockId).active = false;
+          Object.assign(g.player, { x: d.x - 18, y: d.y - 52, grounded: true }); ParadiseCampaign.travel(g);
+          Object.assign(g.player, { x: 650, y: 378 });
+        } else Object.assign(g.player, { x: r.x, y: r.y - 16, vy: 0, invincible: 99 });
+        g.camera = g.room ? 0 : r.x - 250;
       });
       await page.waitForFunction(() => testGame.collectedRecords.size === 1);
       await page.screenshot({ path: `/tmp/part1-record-${name}.png` });
@@ -61,6 +65,7 @@ const url = process.env.TEST_URL || 'http://127.0.0.1:4173';
       await page.locator('#closeJournal').tap();
       await page.evaluate(() => {
         const g = testGame, cp = g.stage.checkpoints[0];
+        if (g.room) { Object.assign(g.player, { x: 80, y: 378, grounded: true }); ParadiseCampaign.travel(g); }
         Object.assign(g.player, { x: cp.x, y: cp.y - 52, vy: 0, grounded: true });
       });
       await page.waitForFunction(() => testGame.checkpoint !== null);

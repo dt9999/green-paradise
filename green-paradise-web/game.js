@@ -91,19 +91,22 @@
   }
   function syncHud() {
     const playing = currentScreen === "play" && game?.state === "playing";
+    $("roomButton").hidden = !playing || paused() || !C.doorway(game);
+    if (playing) $("roomButton").textContent = game.room ? "外へ戻る · F" : "部屋に入る · F";
     $("playHud").hidden = !playing;
     $("touchControls").hidden = !playing || paused();
     $("hintButton").hidden = !playing;
-    $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || paused();
+    $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || !!game?.room || paused();
     $("bossIntro").hidden = !playing || !(game?.bossIntro > 0) || paused();
     if (playing && game.bossIntro > 0) $("bossIntroName").textContent = game.stage.boss.name;
-    $("leafButton").hidden = !playing || !game.leaf;
+    $("leafButton").hidden = !playing || !game.leaf || !!game.room;
     $("rotateHint").hidden = true;
     $("bossHud").hidden = true;
     if (!playing) return;
     const section = game.stage.sections.filter(s => s.x <= game.player.x).at(-1);
     $("stageLabel").textContent = `${String(game.stage.id).padStart(2, "0")} / 50 · ${section.name}`;
     $("journeyStatus").textContent = `${Math.min(100, Math.floor(game.player.x / game.stage.goalX * 100))}% · ${game.checkpoint ? "中継地点を記録済み" : "中継地点をめざそう"}`;
+    if (game.room) { $("stageLabel").textContent = game.room.recordId ? "秘密の研究室" : "資材保管室"; $("journeyStatus").textContent = "右にお宝 · 左の扉から外へ戻れる"; }
     $("hearts").textContent = "♥".repeat(Math.max(0, game.player.hp)) + "♡".repeat(game.player.maxHp - Math.max(0, game.player.hp));
     const charges = Math.floor(game.leafCharge + 1e-9);
     $("leafStatus").textContent = game.leaf ? `葉っぱ ${"●".repeat(charges)}${"○".repeat(3 - charges)} · 1pt` : "";
@@ -228,6 +231,7 @@
       else {
         sound.effect(e.type);
         if (e.type === "drop") toast("葉っぱアイテムが出た！ 拾うとこのステージで発射できるよ。");
+        if (e.type === "roomReward") sound.effect("purchase");
         if (e.type === "pickup" && e.leaf) toast("葉っぱの力！ 3発分のゲージ、2秒で1発回復。Eで発射・1発1pt。");
         if (e.type === "newEnemy" || e.type === "gimmick") toast(e.text);
         if (e.type === "weakpoint") toast("弱点が開いた！ 2.4秒間、葉っぱで追撃できるよ！");
@@ -271,7 +275,7 @@
         P.step(game, input(), 1 / 60, save.points); Object.keys(actions).forEach(k => actions[k] = false);
         accumulator -= 1 / 60; handleEvents();
       }
-      const target = P.clamp(game.player.x - viewWidth * .42, 0, Math.max(0, game.stage.length - viewWidth));
+      const target = P.clamp(game.player.x - viewWidth * .42, 0, Math.max(0, (game.room ? 940 : game.stage.length) - viewWidth));
       game.camera += (target - game.camera) * Math.min(1, dt * 8);
       syncHud();
       if (game.stage.id === 1) {
@@ -369,9 +373,16 @@
   $("mapFromMenu").addEventListener("click", () => { closeMenu(); goMap(); });
   $("soundButton").addEventListener("click", () => { const muted = sound.toggle(); $("soundButton").textContent = `音：${muted ? "オフ" : "オン"}`; });
   const keyMap = { a: "left", arrowleft: "left", d: "right", arrowright: "right", w: "jump", arrowup: "jump", " ": "jump", s: "dive", arrowdown: "dive", e: "shoot" };
+  function useDoor() {
+    if (currentScreen !== "play" || paused() || !C.travel(game)) return;
+    clearInput(); accumulator = 0; syncHud(); sound.effect("pickup");
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) canvas.animate([{ opacity: .2 }, { opacity: 1 }], { duration: 300 });
+  }
+  $("roomButton").addEventListener("click", useDoor);
   window.addEventListener("keydown", e => {
     if (e.key === "Escape" && currentScreen === "play" && !paused()) { e.preventDefault(); openMenu(); return; }
     if (currentScreen !== "play" || paused()) return;
+    if (e.key.toLowerCase() === "f") { e.preventDefault(); if (!e.repeat) useDoor(); return; }
     const action = keyMap[e.key.toLowerCase()]; if (!action) return;
     e.preventDefault(); if (action === "left" || action === "right") keys.add(action); else if (!e.repeat) actions[action] = true;
   });

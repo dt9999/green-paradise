@@ -1,6 +1,14 @@
 const test = require('node:test'), assert = require('node:assert/strict');
 const P = require('../world.js'), C = require('../campaign.js');
 const fresh = id => P.createGame(P.STAGES[id - 1], P.sanitizeSave({}));
+function approachRecord(g, r) {
+  if (r.roomId) {
+    const door = g.stage.rooms.find(d => d.id === r.roomId);
+    g.gimmicks.find(a => a.id === door.blockId).active = false;
+    Object.assign(g.player, { x: door.x - 18, y: door.y - 52, grounded: true }); C.travel(g);
+    Object.assign(g.player, { x: 650, y: 378 });
+  } else Object.assign(g.player, { x: r.x, y: r.y });
+}
 test('Passage blocks have unique IDs and can be reached by diving through the roof', () => {
   for (const s of P.STAGES) {
     assert.equal(new Set(s.gimmicks.map(a => a.id)).size, s.gimmicks.length);
@@ -31,7 +39,7 @@ test('Only part one exists, every expedition has three sections and optional pat
 });
 test('Archives collect on contact once, survive migration and do not stop play', () => {
   const g = fresh(1), r = g.stage.records[0];
-  Object.assign(g.player, { x: r.x, y: r.y });
+  approachRecord(g, r);
   P.step(g, {}, 1 / 60); P.step(g, {}, 1 / 60);
   assert.equal(g.events.filter(e => e.type === 'record').length, 1);
   assert.equal(g.state, 'playing');
@@ -81,7 +89,7 @@ test('All archives have clear landing space, including moving obstacles', () => 
     assert.ok(s.platforms.some(f => r.x - 60 >= f.x && r.x + r.w + 60 <= f.x + f.w && r.y + r.h === f.y));
     for (const a of s.gimmicks) assert.ok(a.x + a.w + (a.range || 0) <= r.x - 100 || a.x - (a.range || 0) >= r.x + 128, `stage ${s.id}: ${a.id}`);
     for (const a of [...s.crystals, s.supply, ...s.targets]) assert.equal(P.overlap(r, a), false, `stage ${s.id}: pickup overlap`);
-    const g = fresh(s.id); Object.assign(g.player, { x: r.x, y: r.y - 16 });
+    const g = fresh(s.id); approachRecord(g, r);
     P.step(g, {}, 1 / 60); assert.ok(g.collectedRecords.has(r.id));
   }
 });

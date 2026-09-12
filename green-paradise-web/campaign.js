@@ -165,11 +165,50 @@
     stage.landmarks = stage.landmarks.filter(l => Math.abs(l.x - x) > 250);
     stage.records.push({ ...record(recordId(stage.id, 0)), x, y: f.y - 36, w: 28, h: 36 });
     if (Math.abs(stage.targets[0].x - x) < 100) stage.targets[0].x = supply.x + 110;
+    stage.rooms = stage.landmarks.filter(l => l.entranceBlock && stage.gimmicks.some(a => a.id === l.entranceBlock)).map((l, i) => ({
+      id: `${PART.id}-${stage.id}-room-${i}`, blockId: l.entranceBlock, x: l.x + 76, y: l.y,
+      recordId: i === 0 ? stage.records[0].id : null,
+    }));
+    if (stage.rooms.length) stage.records[0].roomId = stage.rooms[0].id;
     return stage;
+  }
+  function doorway(g) {
+    const p = g.player;
+    if (g.room) return p.grounded && p.x < 145 ? { exit: true } : null;
+    return g.stage.rooms.find(r => p.grounded && Math.abs(p.x + p.w / 2 - r.x) < 58 &&
+      Math.abs(p.y + p.h - r.y) < 8 && !g.gimmicks.some(a => a.id === r.blockId && a.active)) || null;
+  }
+  function travel(g) {
+    const door = doorway(g);
+    if (!door) return false;
+    if (door.exit) {
+      const outside = g.room.outside; g.room = null;
+      Object.assign(g.player, outside.player, { vx: 0, vy: 0, invincible: 2, dive: false });
+      g.camera = outside.camera;
+    } else {
+      g.room = { ...door, outside: { player: { ...g.player }, camera: g.camera } };
+      Object.assign(g.player, { x: 80, y: 378, vx: 0, vy: 0, grounded: true, dive: false, support: null });
+      g.camera = 0;
+    }
+    g.events.push({ type: "roomTravel" }); return true;
+  }
+  function stepRoom(g, input, dt, hooks) {
+    const p = g.player; g.time += dt;
+    p.vx = ((input.right ? 1 : 0) - (input.left ? 1 : 0)) * 205;
+    if (p.vx) p.facing = Math.sign(p.vx);
+    if (input.jump && p.grounded) { p.vy = -550; p.grounded = false; hooks.emit(g, "jump"); }
+    if (input.dive && !p.grounded) p.vy = 900;
+    p.vy += 1500 * dt; p.x = Math.max(45, Math.min(850, p.x + p.vx * dt)); p.y += p.vy * dt;
+    if (p.y >= 378) { p.y = 378; p.vy = 0; p.grounded = true; }
+    if (p.x + p.w > 630 && p.x < 710 && p.y + p.h > 350) {
+      const id = g.room.recordId;
+      if (id && !g.collectedRecords.has(id)) { g.collectedRecords.add(id); hooks.emit(g, "record", { record: record(id) }); }
+      if (!id && !g.roomRewards.has(g.room.id)) { g.roomRewards.add(g.room.id); hooks.emit(g, "points", { amount: 40 }); hooks.emit(g, "roomReward"); }
+    }
   }
   function update(g, hooks) {
     const p = g.player;
-    for (const r of g.stage.records) if (!g.collectedRecords.has(r.id) &&
+    for (const r of g.stage.records) if (!r.roomId && !g.collectedRecords.has(r.id) &&
       (!r.coverId || !g.gimmicks.some(a => a.id === r.coverId && a.active)) &&
       p.x < r.x + r.w && p.x + p.w > r.x && p.y < r.y + r.h && p.y + p.h > r.y) {
       g.collectedRecords.add(r.id); hooks.emit(g, "record", { record: r });
@@ -205,7 +244,7 @@
     { at: 20, title: "遠く離れた研究施設。", text: "科学者が、植物の成長を示す画面を見つめる。\n数値が跳ね上がる。彼は何も言わず、立ち上がった。" },
     { at: 27, title: "第1部 おわり", text: "緑は帰ってきた。けれど、すべての答えはまだ見つかっていない。\nグリーンの旅は、この先へつづく。" },
   ];
-  const api = { PART, ARCHIVES, SECTION_NAMES, validRecord, record, decorate, update, retry, ENDING, story };
+  const api = { PART, ARCHIVES, SECTION_NAMES, validRecord, record, decorate, update, retry, ENDING, story, doorway, travel, stepRoom };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ParadiseCampaign = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

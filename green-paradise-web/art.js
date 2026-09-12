@@ -325,6 +325,32 @@
     c.restore();
   }
   function render(c, g, time, width, ending = false) {
+    if (g?.room) {
+      c.fillStyle = "#152f32"; c.fillRect(0, 0, width, 540);
+      c.save(); c.translate(Math.max(0, (width - 940) / 2) - g.camera, 0);
+      for (let i = 0; i < 10; i++) {
+        round(c, i * 100, 130, 92, 285, 3, i % 2 ? "#29484a" : "#234043");
+        round(c, i * 100 + 16, 145, 60, 4, 2, "#729b80");
+      }
+      round(c, 30, 430, 880, 110, 4, "#6a7961");
+      round(c, 48, 294, 98, 136, 6, "#0c2026");
+      round(c, 45, 288, 104, 9, 2, "#c6d19c");
+      c.fillStyle = "#edf7c8"; c.font = "bold 17px sans-serif"; c.fillText("← 出口", 62, 280);
+      round(c, 425, 175, 140, 97, 8, "#11272e");
+      c.fillStyle = "#82b497"; c.font = "13px monospace"; c.fillText("FIELD ARCHIVE", 442, 208); c.fillText("OFFLINE / PART I", 437, 240);
+      round(c, 270, 336, 300, 14, 4, "#80977a");
+      round(c, 290, 350, 12, 80, 2, "#4a6557"); round(c, 538, 350, 12, 80, 2, "#4a6557");
+      for (let i = 0; i < 4; i++) { round(c, 294 + i * 24, 292 + i % 2 * 7, 17, 44 - i % 2 * 7, 3, ["#7aa28e", "#b6bd8a", "#4c827a", "#d0b483"][i]); }
+      round(c, 462, 305, 64, 31, 4, "#466957"); leaf(c, 492, 290, 23, "#79ae76", -.8); leaf(c, 480, 286, 16, "#a1c58a", .7);
+      round(c, 610, 405, 120, 25, 5, "#526954");
+      const collected = g.room.recordId ? g.collectedRecords.has(g.room.recordId) : g.roomRewards.has(g.room.id);
+      round(c, 644, 350, 46, 55, 5, collected ? "#546b5e" : "#a4e8c7");
+      round(c, 652, 360, 30, 25, 3, "#173e35");
+      c.fillStyle = "#e3f7b9"; c.font = "bold 17px sans-serif";
+      c.fillText(collected ? "取得済み ✓" : g.room.recordId ? "研究ノート" : "資材 +40 POINT", 615, 330);
+      if (!collected) { ellipse(c, 667, 371, 48, 55, "#a4e8c722"); leaf(c, 668, 302 + Math.sin(time * 2) * 3, 10, "#d7efae", time); }
+      robot(c, g.player, time); c.restore(); return;
+    }
     const b = g ? g.stage.biome : P.BIOMES[0], camera = g ? g.camera : time * 6;
     scenery(c, b, width, time, camera, !!g || ending && time < 5);
     if (g) {
@@ -403,11 +429,11 @@
       const blocked = g.gimmicks.some(a => a.id === l.entranceBlock && a.active);
       c.save(); c.font = "bold 12px sans-serif"; c.textAlign = "center";
       round(c, l.x - 115, l.y - 44, 113, 27, 5, "#183e35ef");
-      c.fillStyle = "#e2f5be"; c.fillText("地上の通路 →", l.x - 59, l.y - 26);
+      c.fillStyle = "#e2f5be"; c.fillText("秘密の部屋 →", l.x - 59, l.y - 26);
       if (blocked) {
         round(c, l.x + 3, l.y - 112, 147, 25, 5, "#fff0c8");
         c.fillStyle = "#684d2d"; c.fillText("↓ 急降下でこわす", l.x + 76, l.y - 95);
-      } else { c.fillStyle = "#d9f7a4"; c.fillText("ここを歩いて通れる →", l.x + 63, l.y - 34); }
+      } else { c.fillStyle = "#d9f7a4"; c.fillText("扉の前で 入る / F", l.x + 63, l.y - 34); }
       c.restore();
     }
     for (const cp of g.stage.checkpoints) {
@@ -418,6 +444,7 @@
       if (active) ellipse(c, cp.x + 3, cp.y, 30, 8, "#d8f79466");
     }
     for (const r of g.stage.records) {
+      if (r.roomId) continue;
       if (r.x < camera - 40 || r.x > camera + width) continue;
       if (r.coverId && g.gimmicks.some(a => a.id === r.coverId && a.active)) {
         ellipse(c, r.x + 14, r.y + 22, 3, 7, "#b0f5e1"); continue;

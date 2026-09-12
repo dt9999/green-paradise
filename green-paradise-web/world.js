@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.5";
+  const VERSION = "1.1.6";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -36,7 +36,7 @@
     mimic: { name: "コピーグリーン", tip: "きみのジャンプをまねするロボだよ。", w: 36, h: 52, speed: 45, hp: 4, points: 60 },
   };
   const REGION_ENEMIES = ["stump", "burrower", "prism", "piston", "spore", "skater", "swooper", "blink", "sentinel", "mimic"];
-  const COST_MULTIPLIERS = [1, 2, 4, 7, 12, 20, 32];
+  const COST_MULTIPLIERS = [1, 2, 4, 10, 22, 45, 90];
   const upgradeCost = (upgrade, level) => level >= upgrade.max ? null : upgrade.cost * COST_MULTIPLIERS[level];
   const stats = u => ({ jump: 550 + 16 * u.jump, speed: 205 + 10 * u.speed,
     hp: 4 + Math.ceil(u.energy / 2), safety: 1.4 + .03 * u.energy,
@@ -115,7 +115,7 @@
     return { stage, upgrades, time: 0, state: "playing", camera: 0, score: 0, earned: 0, events: [],
       grass: new Set(), drops: [], shots: [], hazards: [], particles: [], crystals: stage.crystals.map(c => ({ ...c })),
       gimmicks: G.create(stage), seenGimmicks: new Set(),
-      collectedRecords: new Set(save.records), checkpoint: null, supplyTaken: false,
+      collectedRecords: new Set(save.records), checkpoint: null, supplyTaken: false, room: null, roomRewards: new Set(),
       targets: stage.targets.map(t => ({ ...t, active: true })),
       leaf: false, leafCharge: 3, cooldown: 0, shake: 0, arenaEntered: false, bossIntro: 0, seenEnemies: new Set(),
       player: { x: 80, y: FLOOR - 52, w: 36, h: 52, vx: 0, vy: 0, facing: 1, grounded: true, dive: false,
@@ -302,6 +302,7 @@
   }
   function step(g, input, dt, points = 0) {
     if (g.state !== "playing") return;
+    if (g.room) { C.stepRoom(g, input, dt, { emit, particles }); return; }
     if (g.bossIntro > 0) { g.bossIntro = Math.max(0, g.bossIntro - dt); return; }
     const p = g.player, stage = g.stage;
     g.time += dt; g.cooldown = Math.max(0, g.cooldown - dt); g.shake = Math.max(0, g.shake - dt);
