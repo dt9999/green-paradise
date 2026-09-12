@@ -56,15 +56,20 @@ test('Zero has an absorption telegraph, three phases, and defeat ends only part 
   assert.match(C.ENDING.at(-1).title, /第1部/); assert.match(C.ENDING[3].text, /科学者/);
   assert.ok(!C.ENDING.some(s => /宇宙人|0コア/.test(s.text)));
 });
-test('Hidden archive requires breaking its cover by a real dive', () => {
-  const g = fresh(3), r = g.stage.records[0], cover = g.gimmicks.find(a => a.id === r.coverId);
-  g.enemies = []; g.gimmicks = [cover];
-  Object.assign(g.player, { x: r.x, y: cover.y - 52, vy: 0, grounded: true });
-  P.step(g, {}, 1 / 60); assert.equal(g.collectedRecords.size, 0);
-  Object.assign(g.player, { y: cover.y - 72, grounded: false, vy: 0 });
-  P.step(g, { dive: true }, 1 / 60);
-  for (let i = 0; i < 50; i++) P.step(g, {}, 1 / 60);
-  assert.equal(cover.active, false); assert.ok(g.collectedRecords.has(r.id));
+test('All archives have clear landing space, including moving obstacles', () => {
+  for (const s of P.STAGES) {
+    const r = s.records[0]; assert.equal(r.coverId, undefined);
+    assert.ok(s.platforms.some(f => r.x - 60 >= f.x && r.x + r.w + 60 <= f.x + f.w && r.y + r.h === f.y));
+    for (const a of s.gimmicks) assert.ok(a.x + a.w + (a.range || 0) <= r.x - 100 || a.x - (a.range || 0) >= r.x + 128, `stage ${s.id}: ${a.id}`);
+    for (const a of [...s.crystals, s.supply, ...s.targets]) assert.equal(P.overlap(r, a), false, `stage ${s.id}: pickup overlap`);
+    const g = fresh(s.id); Object.assign(g.player, { x: r.x, y: r.y - 16 });
+    P.step(g, {}, 1 / 60); assert.ok(g.collectedRecords.has(r.id));
+  }
+});
+test('Journal read state migrates without losing records or accepting uncollected entries', () => {
+  const s = P.sanitizeSave({ records: ['part1-1-0'], readRecords: ['part1-1-0', 'part1-1-0', 'part1-2-0', null], journalGuideSeen: true });
+  assert.deepEqual(s.readRecords, ['part1-1-0']); assert.equal(s.journalGuideSeen, true);
+  assert.deepEqual(P.sanitizeSave({ records: s.records }).readRecords, []);
 });
 test('Starting jump can reach Zero from the arena floor for a real dive hit', () => {
   const g = fresh(50), b = g.enemies.find(e => e.boss);

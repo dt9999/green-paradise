@@ -10,13 +10,13 @@
   <title>グリーンパラダイス | 第1部：失われた緑</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=1.1.0">
+  <link rel="stylesheet" href="./styles.css?v=1.1.1">
 </head>
 <body data-screen="title">
   <canvas id="gameCanvas" aria-label="グリーンの冒険の風景"></canvas>
   <header class="topbar">
     <button id="menuButton" class="small-button" aria-controls="menu" aria-expanded="false">☰ メニュー</button>
-    <span class="wordmark">GREEN PARADISE <small>FIELD NOTES / 50</small></span>
+    <button id="journalButton" class="small-button journal-button" aria-controls="journal" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C8 2 4 3 2 4v15c4-2 7-1 10 1 3-2 6-3 10-1V4c-3-1-7-2-10 1Zm0 0v15"/></svg>研究ノート <b id="journalBadge" hidden>0</b></button>
     <span class="wallet"><span aria-hidden="true">✦</span> <b id="points">0</b> <small>pt</small></span>
   </header>
   <main>
@@ -26,7 +26,7 @@
         <h1>グリーン<br><span>パラダイス</span></h1>
         <p class="lead">その小さな一歩が、<br>世界をみどりに変えていく。</p>
         <div class="title-facts"><span>10 の世界</span><span>50 の冒険</span><span>10 体のボス</span></div>
-        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 1.1.0</small></div>
+        <div class="start-area"><button id="startButton" class="primary">冒険をはじめる <span>→</span></button><small id="version">バージョン 1.1.1</small></div>
         <p class="title-hint">A・D 移動 ／ W ジャンプ ／ S 急降下<br>スマホは画面のボタンで遊べます</p>
       </div>
       <div class="scene-caption"><span>01 / THE FIRST SPROUT</span><strong>はじまりの森</strong><small>グリーンと、もう一度芽ぶく世界へ。</small></div>
@@ -47,6 +47,9 @@
   <div id="playHud" class="play-hud" hidden><span id="stageLabel"></span><span id="hearts"></span><span id="leafStatus"></span><small id="journeyStatus"></small></div>
   <div id="bossHud" class="boss-hud" hidden><div><b id="bossName"></b><span id="bossTip"></span></div><progress id="bossHealth" max="1" value="1"></progress></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <aside id="recordNotice" class="record-notice" role="status" hidden><span class="archive-label">NEW ARCHIVE / 記録を保存しました</span><strong>研究ノートを手に入れた！</strong><span id="recordNoticeTitle"></span><div><button id="readNewRecord" class="small-button">ノートを読む →</button><button id="dismissRecord" class="small-button" aria-label="取得のお知らせを閉じる">×</button></div></aside>
+  <dialog id="journal" aria-labelledby="journalTitle"><header class="journal-head"><div><span class="archive-label">GREEN / RESEARCH ARCHIVE</span><h2 id="journalTitle">世界の記憶</h2></div><button id="closeJournal" class="small-button">閉じる ×</button></header><div class="journal-progress"><span id="journalCount"></span><span>第1部：失われた緑</span></div><div class="journal-layout"><nav id="researchNotes" aria-label="手に入れた研究ノート"></nav><article class="journal-page"><span id="recordNumber" class="archive-label"></span><h3 id="recordTitle"></h3><p id="recordBody"></p><footer>GREEN PARADISE / FIELD ARCHIVE<br>ノートを読んでいる間、冒険はひとやすみ。</footer></article></div></dialog>
+  <dialog id="journalWelcome" aria-labelledby="welcomeTitle"><span class="archive-label">FIRST DISCOVERY</span><h2 id="welcomeTitle">はじめての研究ノート！</h2><p>世界のなぞにつながる、大切な記録だよ。</p><div class="journal-location">↑ 画面上の「研究ノート」ボタン</div><p>集めたノートは、ここからいつでも読めるよ。<br>未読の数がついていたら、新しい記録があるしるし。</p><button id="welcomeRead" class="primary">手に入れたノートを読む</button><button id="welcomeContinue" class="small-button">わかった！ 冒険をつづける</button></dialog>
   <button id="hintButton" class="small-button hint-button" hidden>？ ヒント</button>
   <div id="tutorialHint" class="tutorial-hint" hidden></div>
   <div id="bossIntro" class="boss-intro" hidden><small>GUARDIAN OF THE WASTELAND</small><strong id="bossIntroName"></strong><span>大樹を守る戦いが、はじまる。</span></div>
@@ -57,6 +60,6 @@
   </div>
   <dialog id="menu"><div class="menu-head"><h2>ひとやすみ</h2><button id="closeMenu" class="small-button" aria-label="メニューを閉じる">×</button></div><p>メニューを開いている間は、ゲームが止まるよ。</p><button id="resumeButton" class="primary">つづける</button><button id="restartButton" class="small-button">ステージをやり直す</button><button id="mapFromMenu" class="small-button">冒険の地図へ戻る</button><button id="soundButton" class="small-button">音：オン</button><details><summary>遊び方</summary><p class="instructions">A / D：左右　W / ↑ / Space：ジャンプ<br>S / ↓：急降下　E：葉っぱ（アイテム取得後）<br>スマホは画面のボタンで操作します。葉っぱは1発1pt。</p></details><details><summary>このゲームについて</summary><p>グリーンパラダイス<br>つくった人：グリーンパラダイスチーム</p><p>記録はこの端末の中だけに保存されます。名前・位置情報・連絡先などは集めません。</p><p class="menu-note">プライバシーポリシーは公式サイトにあります。</p></details></dialog>
   <noscript>ゲームを遊ぶには、ブラウザの JavaScript を有効にしてください。</noscript>
-  <script src="./gimmicks.js?v=1.1.0"></script><script src="./campaign.js?v=1.1.0"></script><script src="./world.js?v=1.1.0"></script><script src="./music.js?v=1.1.0"></script><script src="./art.js?v=1.1.0"></script><script src="./game.js?v=1.1.0"></script>
+  <script src="./gimmicks.js?v=1.1.1"></script><script src="./campaign.js?v=1.1.1"></script><script src="./world.js?v=1.1.1"></script><script src="./music.js?v=1.1.1"></script><script src="./art.js?v=1.1.1"></script><script src="./game.js?v=1.1.1"></script>
 </body>
 </html>

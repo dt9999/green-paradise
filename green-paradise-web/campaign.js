@@ -99,17 +99,6 @@
         stage.landmarks.push({ x: f.x + 155, y: f.y, type: "shelter" });
       }
     }
-    for (const n of [stage.local % 3]) {
-      const f = ground[Math.max(1, Math.floor((n + .55) * (ground.length - 1) / 3))];
-      const y = n === 1 ? f.y - 70 : f.y;
-      if (n === 1) add("moving", f.x + 30, y, 150);
-      stage.records.push({ ...record(recordId(stage.id, 0)), x: f.x + 90, y: y - 36, w: 28, h: 36 });
-      if (stage.local === 2) {
-        add("brittle", f.x + 80, f.y - 58, 52, { h: 58, solid: true, archive: true });
-        stage.records.at(-1).coverId = stage.gimmicks.at(-1).id;
-      }
-      stage.landmarks.push({ x: f.x + 62, y: f.y, type: n === 0 ? "shelter" : "terminal" });
-    }
     const stops = [Math.floor(ground.length / 3), Math.floor(ground.length * 2 / 3)];
     if (stage.boss) stops.push(ground.length - 2);
     stops.forEach(i => {
@@ -123,6 +112,20 @@
     const supply = ground[Math.max(4, Math.floor(ground.length / 2))];
     stage.supply = { x: supply.x + 18, y: supply.y - 32, w: 26, h: 26 };
     stage.targets = [{ x: supply.x + 210, y: supply.y - 40, w: 28, h: 28 }];
+    // Reserve a whole-height alcove, including moving platforms' swept bounds.
+    // Decoration runs last so later hazards cannot cover the archive again.
+    const preferred = Math.max(1, Math.floor((stage.local % 3 + .55) * (ground.length - 1) / 3));
+    const candidates = ground.map((f, i) => i).filter(i => i > 0 && i < ground.length - 2 &&
+      !stage.enemies.some(e => e.platform === i) && ground[i] !== supply && !stops.includes(i));
+    const index = candidates.sort((a, b) => Math.abs(a - preferred) - Math.abs(b - preferred))[0] ?? preferred;
+    const f = ground[index], x = f.x + f.w * .65;
+    const left = x - 100, right = x + 128;
+    stage.gimmicks = stage.gimmicks.filter(a => a.x + a.w + (a.range || 0) <= left || a.x - (a.range || 0) >= right);
+    stage.gimmicks = stage.gimmicks.filter(a => !a.link || stage.gimmicks.some(s => s.id === a.link));
+    stage.enemies = stage.enemies.filter(e => e.platform !== index);
+    stage.crystals = stage.crystals.filter(c => c.x + c.w <= left || c.x >= right);
+    stage.landmarks = stage.landmarks.filter(l => Math.abs(l.x - x) > 250);
+    stage.records.push({ ...record(recordId(stage.id, 0)), x, y: f.y - 36, w: 28, h: 36 });
     return stage;
   }
   function update(g, hooks) {
@@ -131,7 +134,7 @@
       (!r.coverId || !g.gimmicks.some(a => a.id === r.coverId && a.active)) &&
       p.x < r.x + r.w && p.x + p.w > r.x && p.y < r.y + r.h && p.y + p.h > r.y) {
       g.collectedRecords.add(r.id); hooks.emit(g, "record", { record: r });
-      hooks.particles(g, r.x, r.y, "#c4f5ef", 12);
+      hooks.particles(g, r.x + 14, r.y + 10, "#c4f5ef", 36);
     }
     for (const cp of g.stage.checkpoints) if (p.grounded && Math.abs(p.x - cp.x) < 65 &&
       Math.abs(p.y + p.h - cp.y) < 4 && (!g.checkpoint || cp.x > g.checkpoint.x)) {

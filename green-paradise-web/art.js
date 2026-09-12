@@ -405,6 +405,11 @@
         ellipse(c, r.x + 14, r.y + 22, 3, 7, "#b0f5e1"); continue;
       }
       const found = g.collectedRecords.has(r.id);
+      if (!found) {
+        ellipse(c, r.x + 14, r.y + 18, 46 + Math.sin(time * 3) * 4, 43, "#9cfbe322");
+        round(c, r.x - 31, r.y - 40, 90, 22, 5, "#174e46e8");
+        c.fillStyle = "#d1ffef"; c.font = "bold 11px sans-serif"; c.fillText("研究ノート", r.x - 14, r.y - 25);
+      }
       round(c, r.x - 4, r.y, 36, 38, 4, "#374e52");
       round(c, r.x, r.y + 4, 28, 20, 2, found ? "#6e9085" : "#b0f5e1");
       c.fillStyle = "#254d49"; c.font = "bold 16px sans-serif"; c.fillText(found ? "✓" : "?", r.x + 8, r.y + 20);

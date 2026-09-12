@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
-  const VERSION = "1.1.0";
+  const VERSION = "1.1.1";
   const C = typeof module !== "undefined" && module.exports ? require("./campaign.js") : root.ParadiseCampaign;
   const G = typeof module !== "undefined" && module.exports ? require("./gimmicks.js") : root.ParadiseGimmicks;
   const FLOOR = 430;
@@ -103,6 +103,8 @@
     return { points: num(raw.points, 9999999), highestCleared, clearedStages,
       schemaVersion: 2, activePart: C.PART.id,
       records: [...new Set((Array.isArray(raw.records) ? raw.records : []).filter(id => typeof id === "string" && C.validRecord(id)))],
+      readRecords: [...new Set((Array.isArray(raw.readRecords) ? raw.readRecords : []).filter(id => C.validRecord(id) && Array.isArray(raw.records) && raw.records.includes(id)))],
+      journalGuideSeen: raw.journalGuideSeen === true,
       unlockedStages: Math.max(1, Math.min(50, highestCleared + 1), num(raw.unlockedStages, 50)),
       upgrades: Object.fromEntries(UPGRADES.map(u => [u.id, num(raw.upgrades?.[u.id], u.max)])),
       lastDailyBonus: typeof raw.lastDailyBonus === "string" ? raw.lastDailyBonus : "",

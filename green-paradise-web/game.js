@@ -14,12 +14,8 @@
   const sound = createSound();
   const screens = ["title", "map", "shop", "result", "ending"];
   const hintHistory = [];
-  const journalGuide = document.createElement("details"); journalGuide.id = "journalGuide";
-  journalGuide.innerHTML = '<summary id="journalCount">研究ノート</summary><div id="researchNotes"></div>';
-  const returnFromNotes = document.createElement("button"); returnFromNotes.className = "small-button";
-  returnFromNotes.textContent = "閉じてつづける"; returnFromNotes.addEventListener("click", closeMenu);
-  journalGuide.insertBefore(returnFromNotes, journalGuide.lastElementChild);
-  $("menu").append(journalGuide);
+  let selectedRecord = null, newestRecord = null, noticeTime = 0;
+  const paused = () => $("menu").open || $("journal").open || $("journalWelcome").open;
   const replayEnding = document.createElement("button"); replayEnding.id = "replayEnding";
   replayEnding.className = "small-button"; replayEnding.textContent = "第1部のエピローグを見る";
   $("menu").append(replayEnding);
@@ -49,6 +45,7 @@
   function show(screen) {
     currentScreen = screen; document.body.dataset.screen = screen;
     $("toast").hidden = true;
+    $("recordNotice").hidden = true; noticeTime = 0;
     if (screen === "ending") endingTime = 0;
     for (const id of screens) $(id).hidden = id !== screen;
     clearInput(); syncHud();
@@ -59,10 +56,10 @@
   function syncHud() {
     const playing = currentScreen === "play" && game?.state === "playing";
     $("playHud").hidden = !playing;
-    $("touchControls").hidden = !playing || $("menu").open;
+    $("touchControls").hidden = !playing || paused();
     $("hintButton").hidden = !playing;
-    $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || $("menu").open;
-    $("bossIntro").hidden = !playing || !(game?.bossIntro > 0) || $("menu").open;
+    $("tutorialHint").hidden = !playing || game?.stage.id !== 1 || paused();
+    $("bossIntro").hidden = !playing || !(game?.bossIntro > 0) || paused();
     if (playing && game.bossIntro > 0) $("bossIntroName").textContent = game.stage.boss.name;
     $("leafButton").hidden = !playing || !game.leaf;
     $("rotateHint").hidden = true;
@@ -177,9 +174,13 @@
       else if (e.type === "lost") finish(false, e.reason);
       else if (e.type === "record") {
         if (!save.records.includes(e.record.id)) save.records.push(e.record.id);
-        writePending = true;
-        $("hintButton").textContent = "研究記録を発見 · 読む";
-        hintHistory.unshift(`研究記録：${e.record.title}（メニューの研究ノートで読めます）`);
+        newestRecord = e.record.id; noticeTime = 9;
+        $("recordNoticeTitle").textContent = e.record.title;
+        $("recordNotice").hidden = false;
+        updateJournalBadge(); sound.effect("record"); writeSave();
+        if (!save.journalGuideSeen) {
+          clearInput(); $("journalWelcome").showModal(); syncHud();
+        }
       }
       else {
         sound.effect(e.type);
@@ -209,7 +210,7 @@
   }
   function frame(ms) {
     const dt = last ? Math.min(.08, (ms - last) / 1000) : 0; last = ms; visualTime += dt;
-    if (currentScreen === "ending" && !$("menu").open && !document.hidden) {
+    if (currentScreen === "ending" && !paused() && !document.hidden) {
       endingTime += dt;
       const scene = C.ENDING.filter(s => endingTime >= s.at).at(-1);
       $("endingTitle").textContent = scene.title; $("endingText").textContent = scene.text;
@@ -218,9 +219,10 @@
       $("endingMap").hidden = endingTime < 27;
     }
     if (toastTime > 0) { toastTime -= dt; if (toastTime <= 0) $("toast").hidden = true; }
-    if (currentScreen === "play" && game && !$("menu").open && !document.hidden) {
+    if (noticeTime > 0 && !paused() && !document.hidden) { noticeTime -= dt; if (noticeTime <= 0) $("recordNotice").hidden = true; }
+    if (currentScreen === "play" && game && !paused() && !document.hidden) {
       accumulator += dt;
-      while (accumulator >= 1 / 60 && game.state === "playing") {
+      while (accumulator >= 1 / 60 && game.state === "playing" && !paused()) {
         P.step(game, input(), 1 / 60, save.points); Object.keys(actions).forEach(k => actions[k] = false);
         accumulator -= 1 / 60; handleEvents();
       }
@@ -241,18 +243,47 @@
     Art.render(ctx, currentScreen === "play" || currentScreen === "result" ? game : null, currentScreen === "ending" ? endingTime : game && currentScreen === "play" ? game.time : visualTime, viewWidth, currentScreen === "ending");
     requestAnimationFrame(frame);
   }
-  function openMenu() { clearInput(); renderJournal(); $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }
-  function renderJournal() {
-    $("replayEnding").hidden = !save.endingSeen;
-    const journal = $("researchNotes"); journal.replaceChildren();
-    $("journalCount").textContent = `研究ノート (${save.records.length}/50)`;
-    if (!save.records.length) journal.textContent = "ステージの壊れた端末や青い記録に触れると集まります。読む間はゲームが止まります。";
-    for (const id of [...save.records].reverse()) {
-      const r = C.record(id), entry = document.createElement("details"), title = document.createElement("summary"), body = document.createElement("p");
-      title.textContent = `ステージ${r.stage} · ${r.title}`; body.textContent = r.text;
-      entry.append(title, body); journal.append(entry);
-    }
+  function openMenu() { if (paused()) return; clearInput(); $("replayEnding").hidden = !save.endingSeen; $("menu").showModal(); $("menuButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause(); }
+  function updateJournalBadge() {
+    const count = save.records.filter(id => !save.readRecords.includes(id)).length;
+    $("journalBadge").textContent = count; $("journalBadge").hidden = count === 0;
+    $("journalButton").classList.toggle("has-unread", count > 0);
   }
+  function openJournal(id) {
+    if (paused()) return;
+    selectedRecord = id || save.records.find(r => !save.readRecords.includes(r)) || selectedRecord || save.records.at(-1);
+    clearInput(); renderJournal(); $("journal").showModal();
+    $("journalButton").setAttribute("aria-expanded", "true"); syncHud(); sound.pause();
+  }
+  function renderJournal() {
+    const journal = $("researchNotes"); journal.replaceChildren();
+    $("journalCount").textContent = `${save.records.length} / 50 記録を発見`;
+    const record = selectedRecord && save.records.includes(selectedRecord) ? C.record(selectedRecord) : null;
+    if (record && !save.readRecords.includes(record.id)) { save.readRecords.push(record.id); writeSave(); }
+    $("recordNumber").textContent = record ? `ARCHIVE ${String(record.stage).padStart(2, "0")} / ${P.STAGES[record.stage - 1].biome.name}` : "YOUR FIRST DISCOVERY AWAITS";
+    $("recordTitle").textContent = record ? record.title : "失われた世界の声を、集めよう。";
+    $("recordBody").textContent = record ? record.text : "ステージにある、青く光る記録端末に触れるとノートが手に入るよ。集めた記録はここに残り、何度でも読み返せます。";
+    if (!record) journal.textContent = "まだ記録はありません。";
+    for (const id of [...save.records].sort((a, b) => C.record(a).stage - C.record(b).stage)) {
+      const r = C.record(id), entry = document.createElement("button"), number = document.createElement("small"), title = document.createElement("strong");
+      entry.className = "archive-entry"; entry.setAttribute("aria-current", String(id === selectedRecord));
+      number.textContent = `STAGE ${String(r.stage).padStart(2, "0")}${save.readRecords.includes(id) ? "" : " · 未読"}`;
+      title.textContent = r.title; entry.append(number, title);
+      entry.addEventListener("click", () => { selectedRecord = id; renderJournal(); $("recordTitle").scrollIntoView({ block: "nearest" }); });
+      journal.append(entry);
+    }
+    updateJournalBadge();
+  }
+  function closeJournal() { $("journal").close(); clearInput(); accumulator = 0; $("journalButton").setAttribute("aria-expanded", "false"); syncHud(); sound.resume(); }
+  function closeWelcome(read) { save.journalGuideSeen = true; writeSave(); $("journalWelcome").close(); clearInput(); accumulator = 0; syncHud(); if (read) openJournal(newestRecord); }
+  $("journalButton").addEventListener("click", () => openJournal());
+  $("closeJournal").addEventListener("click", closeJournal);
+  $("journal").addEventListener("cancel", e => { e.preventDefault(); closeJournal(); });
+  $("welcomeRead").addEventListener("click", () => closeWelcome(true));
+  $("welcomeContinue").addEventListener("click", () => closeWelcome(false));
+  $("journalWelcome").addEventListener("cancel", e => { e.preventDefault(); closeWelcome(false); });
+  $("readNewRecord").addEventListener("click", () => openJournal(newestRecord));
+  $("dismissRecord").addEventListener("click", () => { $("recordNotice").hidden = true; noticeTime = 0; });
   function closeMenu() { $("menu").close(); clearInput(); accumulator = 0; $("menuButton").setAttribute("aria-expanded", "false"); syncHud(); if (currentScreen === "shop") renderShop(); sound.resume(); }
   // Native clicks belong to menus; only the actual play controls cancel touch defaults.
   $("startButton").addEventListener("click", () => { show("map"); sound.unlock(); });
@@ -270,14 +301,11 @@
   $("replayEnding").addEventListener("click", () => { if (save.endingSeen) { closeMenu(); show("ending"); sound.theme("ending"); } });
   $("menuButton").addEventListener("click", openMenu);
   $("hintButton").addEventListener("click", () => {
-    const reading = $("hintButton").textContent.startsWith("研究記録");
     openMenu();
-    $("journalGuide").open = reading;
-    $("hintButton").textContent = "？ ヒント・記録";
     const log = $("recentHints"); log.replaceChildren();
     for (const text of hintHistory) { const p = document.createElement("p"); p.textContent = text; log.append(p); }
-    $("hintGuide").open = !reading;
-    $(reading ? "journalGuide" : "hintGuide").scrollIntoView({ block: "start" });
+    $("hintGuide").open = true;
+    $("hintGuide").scrollIntoView({ block: "start" });
   });
   $("closeMenu").addEventListener("click", closeMenu); $("resumeButton").addEventListener("click", closeMenu);
   $("restartButton").addEventListener("click", () => { const id = game?.stage.id; closeMenu(); if (id) startStage(id); });
@@ -286,15 +314,15 @@
   $("soundButton").addEventListener("click", () => { const muted = sound.toggle(); $("soundButton").textContent = `音：${muted ? "オフ" : "オン"}`; });
   const keyMap = { a: "left", arrowleft: "left", d: "right", arrowright: "right", w: "jump", arrowup: "jump", " ": "jump", s: "dive", arrowdown: "dive", e: "shoot" };
   window.addEventListener("keydown", e => {
-    if (e.key === "Escape" && currentScreen === "play" && !$("menu").open) { openMenu(); return; }
-    if (currentScreen !== "play" || $("menu").open) return;
+    if (e.key === "Escape" && currentScreen === "play" && !paused()) { e.preventDefault(); openMenu(); return; }
+    if (currentScreen !== "play" || paused()) return;
     const action = keyMap[e.key.toLowerCase()]; if (!action) return;
     e.preventDefault(); if (action === "left" || action === "right") keys.add(action); else if (!e.repeat) actions[action] = true;
   });
   window.addEventListener("keyup", e => keys.delete(keyMap[e.key.toLowerCase()]));
   document.querySelectorAll("[data-control]").forEach(b => {
     b.addEventListener("pointerdown", e => {
-      if (currentScreen !== "play" || $("menu").open || b.disabled) return;
+      if (currentScreen !== "play" || paused() || b.disabled) return;
       e.preventDefault();
       // A cancelled/system-interrupted pointer may already have lost capture.
       try { b.setPointerCapture(e.pointerId); } catch {}
@@ -308,8 +336,8 @@
   });
   canvas.addEventListener("contextmenu", e => e.preventDefault());
   canvas.addEventListener("touchstart", e => e.preventDefault(), { passive: false });
-  window.addEventListener("blur", () => { clearInput(); if (currentScreen === "play" && !$("menu").open) openMenu(); });
-  document.addEventListener("visibilitychange", () => { clearInput(); writeSave(); if (document.hidden && currentScreen === "play" && !$("menu").open) openMenu(); });
+  window.addEventListener("blur", () => { clearInput(); if (currentScreen === "play" && !paused()) openMenu(); });
+  document.addEventListener("visibilitychange", () => { clearInput(); writeSave(); if (document.hidden && currentScreen === "play" && !paused()) openMenu(); });
   window.addEventListener("pagehide", writeSave); window.addEventListener("resize", resize);
   $("points").textContent = save.points; $("version").textContent = `バージョン ${P.VERSION}`;
   $("menu").querySelector(".instructions").append(document.createTextNode("\n葉っぱゲージは3発分、2秒で1発回復。ボスは急降下で弱点が開き、体力が半分になると本気モードになります。"));
@@ -322,7 +350,7 @@
     const line = document.createElement("p"); line.textContent = `${name}：${hint}`; guide.append(line);
   }
   $("menu").append(guide);
-  resize(); show("title"); requestAnimationFrame(frame);
+  updateJournalBadge(); resize(); show("title"); requestAnimationFrame(frame);
 
   function createSound() {
     let audio = null, master = null, timer = null, score = window.ParadiseMusic.select("title"), beat = 0, muted = false, paused = false;
@@ -355,6 +383,7 @@
       resume() { paused = false; if (audio) void audio.resume().catch(() => {}); },
       toggle() { muted = !muted; if (master) master.gain.value = muted ? 0 : .7; if (!muted) unlock(); return muted; },
       effect(type) {
+        if (type === "record") { [76, 83, 88].forEach(n => note(n, .7, .025, "sine")); return; }
         const tones = { jump: 77, spring: 89, crack: 42, dive: 45, land: 43, grass: 89, hit: 62, defeat: 84, pickup: 88, purchase: 86, shoot: 82, hurt: 38, step: 40, bossAttack: 35, bossDefeat: 91, drop: 93 };
         if (tones[type]) note(tones[type], type === "step" ? .035 : .16, type === "step" || type === "grass" ? .01 : .04, "triangle");
       } };
